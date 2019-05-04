@@ -6,13 +6,13 @@ All notable changes to this project will be documented in this file. This change
 
 ### Changed
 
-- n/a
+- Implemented logic for keeping track of nodes in a hierarchy
 
-## 0.1.0 - 2019-05-03
+## [0.1.0] - 2019-05-03
 
 ### Added
 
-- Files from the new template.
+- Files from the leiningen template.
 
-[unreleased]: https://github.com/your-name/task-tracker/compare/0.1.1...HEAD
-[0.1.1]: https://github.com/your-name/task-tracker/compare/0.1.0...0.1.1
+[unreleased]: https://github.com/creyes17/task-tracker/compare/0.1.0...HEAD
+[0.1.0]: https://github.com/creyes17/task-tracker/tree/v0.1.0
