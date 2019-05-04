@@ -11,7 +11,7 @@ Download from http://www.github.com/creyes17/task-tracker
 ## Usage
 
 TODO: Implement and flesh this out.
-Maybe this could start up a docker container with a database
+Maybe this could connect to a docker container with a database
 
     $ java -jar task-tracker-0.1.0-standalone.jar [args]
 
