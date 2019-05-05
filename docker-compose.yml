@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+    postgres:
+        environment:
+            - "PGDATA=${PGDATA:-/var/lib/postgresql/data}"
+            - "POSTGRES_DB=${POSTGRES_DB:-dev_chrisreyes_tasktracker}"
+            - POSTGRES_INITDB_WALDIR
+            - POSTGRES_PASSWORD
+            - POSTGRES_USER
+        healthcheck:
+            test: pg_isready || exit 1
+        image: 'postgres:11.2-alpine'
+        networks:
+            - task-net
+        ports:
+            - '5432:5432'
+        volumes:
+            - "./target/data:${PGDATA:-/var/lib/postgresql/data}"
+
+networks:
+    task-net:
+        driver: bridge
