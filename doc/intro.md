@@ -5,7 +5,7 @@ Based on https://arxiv.org/pdf/0806.3115.pdf
 You can create a new hierarchy with:
 
 ```clojure
-(require '[task-tracker.core :as tracker :refer [create-root add-child]])
+(require '[task-tracker.hierarchy :as tracker :refer [create-root add-child]])
 
 (let [root (tracker/create-root 3)]
       ; #task_tracker.core.HierarchyNode{:this-numerator 3,
