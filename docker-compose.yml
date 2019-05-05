@@ -19,7 +19,7 @@ services:
             - '5432:5432'
         volumes:
             - "./target/data:${PGDATA:-/var/lib/postgresql/data}"
-            - "./resources/migrations/postgres/v00_01_01-01-schema.sql:/docker-entrypoint-initdb.d/init.sql"
+            - "./resources/migrations/postgres:/docker-entrypoint-initdb.d"
 
 networks:
     task-net:
