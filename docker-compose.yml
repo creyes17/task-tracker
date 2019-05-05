@@ -3,6 +3,9 @@ services:
     postgres:
         environment:
             - "PGDATA=${PGDATA:-/var/lib/postgresql/data}"
+            - "PGDATABASE=${POSTGRES_DB:-dev_chrisreyes_tasktracker}"
+            - "PGPASSWORD=${POSTGRES_PASSWORD}"
+            - "PGUSER=${POSTGRES_USER}"
             - "POSTGRES_DB=${POSTGRES_DB:-dev_chrisreyes_tasktracker}"
             - POSTGRES_INITDB_WALDIR
             - POSTGRES_PASSWORD
@@ -16,6 +19,7 @@ services:
             - '5432:5432'
         volumes:
             - "./target/data:${PGDATA:-/var/lib/postgresql/data}"
+            - "./resources/migrations/postgres/schema-v0_1_1.sql:/docker-entrypoint-initdb.d/init.sql"
 
 networks:
     task-net:

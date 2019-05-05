@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. This change
 ### Changed
 
 - Implemented logic for keeping track of nodes in a hierarchy
+- Added docker-compose and got database set up
 
 ## [0.1.0] - 2019-05-03
 
