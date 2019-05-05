@@ -8,6 +8,5 @@ create table if not exists hierarchy (
     denominator bigint not null,
     next_sibling_numerator bigint not null,
     next_sibling_denominator bigint not null,
-    num_children bigint not null default 0,
     unique(numerator, denominator)
 )
