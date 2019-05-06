@@ -10,9 +10,9 @@ create table if not exists task (
     issue_link text,
     /* Auditing columns */
     created timestamp(2) with time zone not null default current_timestamp(2),
-    created_by text not null default current_user,
+    created_by text not null,
     last_modified timestamp(2) with time zone not null default current_timestamp(2),
-    last_modified_by text not null default current_user,
+    last_modified_by text not null,
     deleted timestamp(2) with time zone,
     deleted_by text
 );
@@ -21,8 +21,13 @@ create table if not exists task_audit (
     operation_id bigint not null,
     task_id bigint not null references task (task_id),
     modified timestamp(2) not null default current_timestamp(2),
-    modified_by text not null default current_user,
+    modified_by text not null,
     field_name varchar(64) not null,
     old_value text,
     new_value text
 );
+
+create trigger tg_task_audit
+    after update on task
+    for each row
+    execute audit_table();
