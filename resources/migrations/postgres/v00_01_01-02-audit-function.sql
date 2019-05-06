@@ -1,28 +1,40 @@
 /*
- * Creates the schema for tasks (along with an associated audit table)
+ * Creates the auditing functions used in triggers
  */
 
-create table if not exists task (
-    task_id bigint generated always as identity primary key,
-    hierarchy_id bigint not null unique references hierarchy (hierarchy_id),
-    estimated_time_minutes bigint not null default 0,
-    actual_time_minutes bigint not null default 0,
-    issue_link text,
-    /* Auditing columns */
-    created timestamp(2) with time zone not null default current_timestamp(2),
-    created_by text not null default current_user,
-    last_modified timestamp(2) with time zone not null default current_timestamp(2),
-    last_modified_by text not null default current_user,
-    deleted timestamp(2) with time zone,
-    deleted_by text
-);
+create or replace function audit_table () returns trigger as $audit_table$
+    DECLARE
+        op_id bigint;
+        audit_tablename text;
+        table_id text;
+    BEGIN
+        audit_tablename = TG_TABLE_NAME || '_audit';
+        table_id = TG_TABLE_NAME || '_id';
 
-create table if not exists task_audit (
-    operation_id bigint not null,
-    task_id bigint not null references task (task_id),
-    modified timestamp(2) not null default current_timestamp(2),
-    modified_by text not null default current_user,
-    field_name varchar(64) not null,
-    old_value text,
-    new_value text
-);
+        EXECUTE $op-id$
+            select max(operation_id) + 1 into op_id from %s;
+        $op-id$
+        using audit_tablename;
+
+        EXECUTE $$
+            insert into %s (operation_id,
+                            %s,
+                            modified_by,
+                            field_name,
+                            old_value,
+                            new_value)
+            values (
+                %d,
+                %s,
+                current_user(),
+                %s,
+                %s,
+                %s
+            );
+        $$
+        using audit_tablename,
+              table_id,
+              op_id,
+              OLD.; -- How do I get the table_id from OLD?
+    END;
+$audit_table$ language plpgsql;
