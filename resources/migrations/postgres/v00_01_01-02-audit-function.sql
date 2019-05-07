@@ -1,4 +1,8 @@
 /*
+ * Creates audit functions used in triggers
+ */
+
+/*
  * audit_table
  *
  * Use in an UPDATE trigger to write to an audit table.
@@ -59,3 +63,19 @@ create or replace function audit_table () returns trigger as $audit_table$
         return NEW;
     END;
 $audit_table$ language plpgsql;
+
+/*
+ * set_last_modified
+ *
+ * Use in a BEFORE UPDATE trigger to make sure the last_modified is always set
+ * Assumes:
+ *  - There exists a column in the table being updated called "last_modified"
+ */
+create or replace function set_last_modified () returns trigger as $set_last_modified$
+    BEGIN
+        if OLD.last_modified = NEW.last_modified then
+            NEW.last_modified = current_timestamp(2);
+        end if;
+        return NEW;
+    END;
+$set_last_modified$ language plpgsql;

@@ -31,3 +31,8 @@ create trigger tg_task_audit
     after update on task
     for each row
     execute function audit_table();
+
+create trigger tg_task_last_modified
+    before update on task
+    for each row
+    execute function set_last_modified();
