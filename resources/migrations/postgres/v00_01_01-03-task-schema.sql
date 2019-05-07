@@ -30,4 +30,4 @@ create table if not exists task_audit (
 create trigger tg_task_audit
     after update on task
     for each row
-    execute audit_table();
+    execute function audit_table();

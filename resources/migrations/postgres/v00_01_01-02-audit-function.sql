@@ -20,8 +20,7 @@ create or replace function audit_table () returns trigger as $audit_table$
         audit_tablename = quote_ident(TG_TABLE_NAME || '_audit');
 
         -- Get a new operation ID
-        execute 'select coalesce(max(operation_id), 0) + 1 from $1'
-            using audit_tablename
+        execute 'select coalesce(max(operation_id), 0) + 1 from ' || audit_tablename
             into op_id;
 
         table_id = quote_ident(TG_TABLE_NAME || '_id');
@@ -29,34 +28,34 @@ create or replace function audit_table () returns trigger as $audit_table$
         execute 'select $1.' || table_id using NEW into record_id;
 
         -- Loop over every column and save an audit record for any that were changed
-        for col_name in json_object_keys(row_to_json(OLD)) loop
+        for col_name in select json_object_keys(row_to_json(OLD)) loop
             execute 'select cast($1.' || quote_ident(col_name) || ' as text)'
                 using OLD into old_val;
             execute 'select cast($1.' || quote_ident(col_name) || ' as text)'
                 using NEW into new_val;
 
-            if old_val <> new_val then
-                execute $$
-                    insert into $1 (operation_id,
-                                    $2,
+            if (old_val is null and new_val is not null) or
+                    (old_val is not null and new_val is null) or
+                    (old_val is not null and new_val is not null and old_val <> new_val) then
+                execute format($$
+                    insert into %s (operation_id,
+                                    %s,
                                     modified,
                                     modified_by,
                                     field_name,
                                     old_value,
                                     new_value)
-                    values ($3, $4, $5, $6, $7, $8, $9);
-                $$
-                using audit_tablename,
-                      table_id,
-
-                      op_id,
+                    values ($1, $2, $3, $4, $5, $6, $7);
+                $$, audit_tablename, table_id)
+                using op_id,
                       record_id,
                       NEW.last_modified,
                       NEW.last_modified_by,
                       col_name,
                       old_val,
                       new_val;
-            end
-        end
+            end if;
+        end loop;
+        return NEW;
     END;
 $audit_table$ language plpgsql;
