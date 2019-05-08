@@ -5,7 +5,9 @@
             :url "none"
             :year 2019
             :key "gpl-3.0"}
-  :dependencies [[org.clojure/clojure "1.10.0"]]
+  :dependencies [[org.clojure/clojure "1.10.0"]
+                 [org.postgresql/postgresql "42.2.5.jre7"]
+                 [org.clojure/java.jdbc "0.7.9"]]
   :main ^:skip-aot task-tracker.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
