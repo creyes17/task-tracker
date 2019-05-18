@@ -6,8 +6,12 @@
             :year 2019
             :key "gpl-3.0"}
   :dependencies [[org.clojure/clojure "1.10.0"]
-                 [org.postgresql/postgresql "42.2.5.jre7"]
-                 [org.clojure/java.jdbc "0.7.9"]]
+                 [cheshire "5.8.1"]
+                 [com.cognitect.aws/api "0.8.305"]
+                 [com.cognitect.aws/endpoints "1.1.11.549"]
+                 [com.cognitect.aws/secretsmanager "707.2.405.0"]
+                 [org.clojure/java.jdbc "0.7.9"]
+                 [org.postgresql/postgresql "42.2.5.jre7"]]
   :main ^:skip-aot task-tracker.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
