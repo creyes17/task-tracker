@@ -5,4 +5,4 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (println (persistence/debug-postgres-connection)))
+  (println (persistence/get-next-root)))

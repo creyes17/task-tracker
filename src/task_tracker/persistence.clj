@@ -16,14 +16,13 @@
                                                    :dbtype "postgres"
                                                    :user (get secret :username))))
 
-(defn- do-select-query
-  "Executes the given select query"
-  [prepared-statement]
-  (jdbc/query db-config prepared-statement))
-
-(defn debug-postgres-connection
-  "Just runs a simple query to confirm we can connect to postgres"
+(defn get-next-root
+  "Queries for the next root numerator to insert"
   []
-  ; Get credentials
-  (let [statement "select * from hierarchy"]
-    (do-select-query statement)))
+  (get (first (jdbc/query db-config "select
+                                       max(hierarchy.next_sibling_numerator) as max
+                                     from
+                                       hierarchy
+                                     where
+                                       hierarchy.denominator = 1"))
+       :max))
