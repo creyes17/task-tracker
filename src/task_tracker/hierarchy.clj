@@ -1,7 +1,10 @@
 (ns task-tracker.hierarchy
   (:gen-class))
 
-(defrecord Node [this-numerator
+; TODO: Create clojure.spec
+; https://clojure.org/about/spec
+(defrecord Node [hierarchy-id
+                 this-numerator
                  this-denominator
                  next-numerator
                  next-denominator

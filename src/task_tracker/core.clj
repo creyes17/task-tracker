@@ -1,6 +1,6 @@
 (ns task-tracker.core
-  (:require [task-tracker.persistence :as persistence])
-  (:gen-class))
+  (:gen-class)
+  (:require [task-tracker.persistence :as persistence]))
 
 (defn -main
   "I don't do a whole lot ... yet."
