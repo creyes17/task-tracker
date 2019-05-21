@@ -91,9 +91,16 @@
                                                      and hierarchy.denominator = ?"
                                                   (:numerator hierarchy-node)
                                                   (:denominator hierarchy-node)])))
-                         (:hierarchy_id (jdbc/insert! % (to-db-row hierarchy-node))))]
+                         (:hierarchy_id
+                           (first (jdbc/insert! %
+                                                :hierarchy
+                                                (to-db-row hierarchy-node)))))
+        updated-task (assoc-in new-task [:hierarchy-node :hierarchy-id] hierarchy-id)]
        {:hierarchy (assoc hierarchy-node :hierarchy-id hierarchy-id)
-        :task (from-db-row (jdbc/insert! % (to-db-row new-task)))})))
+        :task (from-db-row
+                (first (jdbc/insert! % :task (assoc (to-db-row updated-task)
+                                                    :created_by "chance"
+                                                    :last_modified_by "chance"))))})))
 
 (defn get-next-root
   "Queries for the next root numerator to insert"
