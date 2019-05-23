@@ -11,8 +11,8 @@
                  num-children])
 
 (defn create-root
-  "Creates a new root `task-tracker.core/Node`.
-  The resulting `task-tracker.core/Node` will have `(= (/ :this-numerator :this-denominator) value)`"
+  "Creates a new root Node.
+  The resulting Node will have `(= (/ :this-numerator :this-denominator) value)`"
   [value]
   (map->Node {:this-numerator value
               :this-denominator 1

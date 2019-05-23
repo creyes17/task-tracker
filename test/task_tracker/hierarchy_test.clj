@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [task-tracker.hierarchy :refer :all]))
 
-(deftest test-create-root
+(deftest create-root-test
   (testing "Can create root"
     (doseq [value [1 2]]
       (let [root (create-root value)]
@@ -12,7 +12,7 @@
         (is (= (:next-denominator root) 1) "Denominator for root tasks is always 1")
         (is (= (:num-children root) 0) "Root tasks start with no children")))))
 
-(deftest test-get-child-value
+(deftest get-child-value-test
   (testing "Can calculate child value"
     ; See https://arxiv.org/pdf/0806.3115.pdf section 2.1
     ; nvc = nvp + c * snvp
@@ -30,7 +30,7 @@
     ; 2 + (2 * 3) = 8
     (is (= (get-child-value 2 2 3) 8))))
 
-(deftest test-add-child
+(deftest add-child-test
   (testing "Can add a child to a root"
     (let [root (create-root 1)
           result (add-child root)

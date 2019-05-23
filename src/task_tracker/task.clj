@@ -8,3 +8,15 @@
                  issue-link
                  estimated-time-minutes
                  actual-time-minutes])
+
+(defn create-task
+  "Creates a new Task."
+  ([issue-link hierarchy-node]
+   (create-task issue-link hierarchy-node nil))
+  ([issue-link hierarchy-node estimated-time]
+   (create-task issue-link hierarchy-node estimated-time nil))
+  ([issue-link hierarchy-node estimated-time actual-time]
+   (map->Task {:actual-time-minutes actual-time
+               :estimated-time-minutes estimated-time
+               :hierarchy-node hierarchy-node
+               :issue-link issue-link})))
