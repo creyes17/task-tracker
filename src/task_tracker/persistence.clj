@@ -3,8 +3,7 @@
   (:require [cheshire.core :as json]
             [clojure.java.jdbc :as jdbc]
             [clojure.set :refer [map-invert rename-keys]]
-            [cognitect.aws.client.api :as aws]
-            [task-tracker.hierarchy]))
+            [cognitect.aws.client.api :as aws]))
 
 
 (defn- filter-nil-values
@@ -44,8 +43,7 @@
   "Given a database row representing a hierarchy node,
   return the canonical hierarchy node representation"
   [db-row]
-  (task-tracker.hierarchy/map->Node
-    (rename-keys db-row (map-invert (:hierarchy db-schema)))))
+  (rename-keys db-row (map-invert (:hierarchy db-schema))))
 
 (defn db-row->task
   "Given a database row representing a task,
