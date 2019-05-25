@@ -1,8 +1,7 @@
 (ns task-tracker.hierarchy
   (:gen-class))
 
-; TODO: Create clojure.spec
-; https://clojure.org/about/spec
+; TODO: get rid of these record types in favor of plain maps
 (defrecord Node [hierarchy-id
                  this-numerator
                  this-denominator
@@ -10,6 +9,8 @@
                  next-denominator
                  num-children])
 
+; TODO: Create clojure.spec
+; https://clojure.org/about/spec
 (defn create-root
   "Creates a new root Node.
   The resulting Node will have `(= (/ :this-numerator :this-denominator) value)`"

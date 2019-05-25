@@ -6,6 +6,7 @@
             [cognitect.aws.client.api :as aws]
             [task-tracker.hierarchy]
             [task-tracker.task])
+  ; TODO: Fix imports after getting rid of Protocol
   (:import task_tracker.task.Task
            task_tracker.hierarchy.Node))
 
@@ -27,6 +28,7 @@
           :estimated-time-minutes :estimated_time_minutes
           :actual-time-minutes :actual_time_minutes}})
 
+; TODO: Change to task->db-row and hierarchy-node->db-row
 (defprotocol DataTransferObject
   "A data structure that can prepare itself for insertion into persistent storage"
   (to-db-row [this] "Returns a map matching the database schema for this type"))
@@ -45,6 +47,7 @@
     (filter-nil-values (rename-keys (select-keys this (keys (:hierarchy db-schema)))
                                     (:hierarchy db-schema)))))
 
+; TODO: Change to db-row->task and db-row->hierarchy-node
 (defmulti from-db-row
   "Converts a database row into the appropriate DataTransferObject"
   (fn [db-row] (if (some? (:task_id db-row)) :task
@@ -60,51 +63,92 @@
   [db-row]
   (task-tracker.hierarchy/map->Node (rename-keys db-row (map-invert (:hierarchy db-schema)))))
 
-; TODO: Warn if environment variable not present
-; TODO: Look into updating these values periodically and/or in response to a trigger
-;       Actually, just make this a function and let the calling context choose when to update cache
-(def ^:private db-config (let [credentials-secret (System/getenv "C17_TASKTRACKER_POSTGRES_SECRET")
-                               secrets-manager-client (aws/client {:api :secretsmanager})
-                               secretResponse (aws/invoke secrets-manager-client
-                                                          {:op :GetSecretValue
-                                                           :request {:SecretId credentials-secret}})
-                               secret (json/decode (:SecretString secretResponse) true)]
-                               (assoc (select-keys secret [:dbname :host :password :port])
-                                                   :dbtype "postgres"
-                                                   :user (:username secret))))
 
-(defn create-task
-  "Inserts a new task into the database"
-  [new-task]
+(defn get-credentials-secret
+  "Gets the secret name to use to retrieve credentials from AWS Secrets Manager"
+  []
+  (System/getenv "C17_TASKTRACKER_POSTGRES_SECRET"))
+
+(defn get-secret-from-aws
+  "Given a secret name, returns that secret as a map from AWS Secrets Manager"
+  [secret-name]
+  (let [secrets-manager-client (aws/client {:api :secretsmanager})
+        secretResponse (aws/invoke secrets-manager-client
+                                   {:op :GetSecretValue
+                                    :request {:SecretId secret-name}})]
+       (json/decode (:SecretString secretResponse)
+                    ; The "true" argument here converts string keys to :keys
+                    true)))
+
+(defn get-config
+  "Gets the configuration from the JSON secret
+  It should have the following keys:
+    :dbname   - The name of the database within postgres
+    :host     - The URL of the machine hosting the postgres instance
+    :password - The password for the :username of the database
+    :port     - The port number on the host machine to use to connect
+    :username - The log-in name for a user of the database
+  All other keys will be ignored"
+  [secret]
+  (assoc (select-keys secret [:dbname :host :password :port])
+         :dbtype "postgres"
+         :user (:username secret)))
+
+(defn get-hierarchy-id-from-db
+  "Given a hierarchy/Node, search the database for the ID of
+  a saved hierarchy with the same numerator/denominator."
+  [db-config hierarchy-node]
+  (:hierarchy_id (first (jdbc/query db-config ["select
+                                          hierarchy.hierarchy_id
+                                        from
+                                          hierarchy
+                                        where
+                                          hierarchy.numerator = ?
+                                          and hierarchy.denominator = ?"
+                                       (:numerator hierarchy-node)
+                                       (:denominator hierarchy-node)]))))
+
+(defn insert-hierarchy-node
+  "Saves a hierarchy node to the database, returning the ID"
+  [db-config hierarchy-node]
+  (:hierarchy_id (first (jdbc/insert! db-config
+                                      :hierarchy
+                                      (to-db-row hierarchy-node)))))
+
+(defn get-or-create-hierarchy-id
+  "Gets the ID from a hierarchy-node. If the node has never been
+  saved to the database, saves it first returning the new ID."
+  [db-config hierarchy-node]
+  (or (:hierarchy-id hierarchy-node)
+      (get-hierarchy-id-from-db db-config hierarchy-node)
+      (insert-hierarchy-node db-config hierarchy-node)))
+
+(defn insert-task
+  "Inserts the task to the database, returning the updated Task"
+  ; TODO: rename parameter to "task"
+  [db-config new-task username]
+  (from-db-row
+    (first (jdbc/insert! db-config
+                         :task (assoc (to-db-row new-task)
+                                      :created_by username
+                                      :last_modified_by username)))))
+
+(defn save-task
+  "Saves a new task to the database"
+  ; TODO: rename parameter to "task"
+  [db-config new-task username]
   (jdbc/db-transaction*
     db-config
-    #(let
-       [hierarchy-node (:hierarchy-node new-task)
-        hierarchy-id (or (:hierarchy-id hierarchy-node)
-                         (:hierarchy_id
-                           (first (jdbc/query % ["select
-                                                     hierarchy.hierarchy_id
-                                                  from
-                                                     hierarchy
-                                                  where
-                                                     hierarchy.numerator = ?
-                                                     and hierarchy.denominator = ?"
-                                                  (:numerator hierarchy-node)
-                                                  (:denominator hierarchy-node)])))
-                         (:hierarchy_id
-                           (first (jdbc/insert! %
-                                                :hierarchy
-                                                (to-db-row hierarchy-node)))))
-        updated-task (assoc-in new-task [:hierarchy-node :hierarchy-id] hierarchy-id)]
-       {:hierarchy (assoc hierarchy-node :hierarchy-id hierarchy-id)
-        :task (from-db-row
-                (first (jdbc/insert! % :task (assoc (to-db-row updated-task)
-                                                    :created_by "chance"
-                                                    :last_modified_by "chance"))))})))
+    (fn [transaction-config]
+      (let [hierarchy-node (:hierarchy-node new-task)
+            hierarchy-id (get-or-create-hierarchy-id transaction-config hierarchy-node)
+            updated-task (assoc-in new-task [:hierarchy-node :hierarchy-id] hierarchy-id)]
+        {:hierarchy (assoc hierarchy-node :hierarchy-id hierarchy-id)
+         :task (insert-task transaction-config updated-task username)}))))
 
 (defn get-next-root
   "Queries for the next root numerator to insert"
-  []
+  [db-config]
   (:max (first (jdbc/query db-config "select
                                        max(hierarchy.next_sibling_numerator) as max
                                      from
