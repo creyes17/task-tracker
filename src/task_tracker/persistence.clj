@@ -4,8 +4,7 @@
             [clojure.java.jdbc :as jdbc]
             [clojure.set :refer [map-invert rename-keys]]
             [cognitect.aws.client.api :as aws]
-            [task-tracker.hierarchy]
-            [task-tracker.task]))
+            [task-tracker.hierarchy]))
 
 
 (defn- filter-nil-values
@@ -52,9 +51,8 @@
   "Given a database row representing a task,
   return the canonical task representation"
   [db-row]
-  (task-tracker.task/map->Task
-    (assoc (rename-keys db-row (map-invert (:task db-schema)))
-           :hierarchy-node (db-row->hierarchy-node db-row))))
+  (assoc (rename-keys db-row (map-invert (:task db-schema)))
+         :hierarchy-node (db-row->hierarchy-node db-row)))
 
 (defn get-credentials-secret
   "Gets the secret name to use to retrieve credentials from AWS Secrets Manager"
@@ -116,7 +114,7 @@
       (insert-hierarchy-node db-config hierarchy-node)))
 
 (defn insert-task
-  "Inserts the task to the database, returning the updated Task"
+  "Inserts the task to the database, returning the updated task"
   [db-config task username]
   (db-row->task
     (first (jdbc/insert! db-config
