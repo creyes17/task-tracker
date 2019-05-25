@@ -5,10 +5,7 @@
             [clojure.set :refer [map-invert rename-keys]]
             [cognitect.aws.client.api :as aws]
             [task-tracker.hierarchy]
-            [task-tracker.task])
-  ; TODO: Fix imports after getting rid of Protocol
-  (:import task_tracker.task.Task
-           task_tracker.hierarchy.Node))
+            [task-tracker.task]))
 
 
 (defn- filter-nil-values
@@ -28,41 +25,36 @@
           :estimated-time-minutes :estimated_time_minutes
           :actual-time-minutes :actual_time_minutes}})
 
-; TODO: Change to task->db-row and hierarchy-node->db-row
-(defprotocol DataTransferObject
-  "A data structure that can prepare itself for insertion into persistent storage"
-  (to-db-row [this] "Returns a map matching the database schema for this type"))
+(defn task->db-row
+  "Returns a map matching the database schema for a task"
+  [task]
+  (filter-nil-values
+    (assoc
+      (rename-keys (select-keys task (keys (:task db-schema)))
+                   (:task db-schema))
+      :hierarchy_id (:hierarchy-id (:hierarchy-node task)))))
 
-(extend-protocol DataTransferObject
-  task_tracker.task.Task
-  (to-db-row
-    [this]
-    (filter-nil-values
-      (assoc (rename-keys (select-keys this (keys (:task db-schema)))
-                          (:task db-schema))
-             :hierarchy_id (:hierarchy-id (:hierarchy-node this)))))
-  task_tracker.hierarchy.Node
-  (to-db-row
-    [this]
-    (filter-nil-values (rename-keys (select-keys this (keys (:hierarchy db-schema)))
-                                    (:hierarchy db-schema)))))
+(defn hierarchy-node->db-row
+  "Returns a map matching the database schema for a hierarchy node"
+  [hierarchy-node]
+  (filter-nil-values
+    (rename-keys (select-keys hierarchy-node (keys (:hierarchy db-schema)))
+                 (:hierarchy db-schema))))
 
-; TODO: Change to db-row->task and db-row->hierarchy-node
-(defmulti from-db-row
-  "Converts a database row into the appropriate DataTransferObject"
-  (fn [db-row] (if (some? (:task_id db-row)) :task
-                 (if (some? (:hierarchy_id db-row)) :hierarchy))))
-
-(defmethod from-db-row :task
+(defn db-row->hierarchy-node
+  "Given a database row representing a hierarchy node,
+  return the canonical hierarchy node representation"
   [db-row]
-  (task-tracker.task/map->Task (assoc
-                    (rename-keys db-row (map-invert (:task db-schema)))
-                    :hierarchy-node (from-db-row (dissoc db-row :task_id)))))
+  (task-tracker.hierarchy/map->Node
+    (rename-keys db-row (map-invert (:hierarchy db-schema)))))
 
-(defmethod from-db-row :hierarchy
+(defn db-row->task
+  "Given a database row representing a task,
+  return the canonical task representation"
   [db-row]
-  (task-tracker.hierarchy/map->Node (rename-keys db-row (map-invert (:hierarchy db-schema)))))
-
+  (task-tracker.task/map->Task
+    (assoc (rename-keys db-row (map-invert (:task db-schema)))
+           :hierarchy-node (db-row->hierarchy-node db-row))))
 
 (defn get-credentials-secret
   "Gets the secret name to use to retrieve credentials from AWS Secrets Manager"
@@ -113,7 +105,7 @@
   [db-config hierarchy-node]
   (:hierarchy_id (first (jdbc/insert! db-config
                                       :hierarchy
-                                      (to-db-row hierarchy-node)))))
+                                      (hierarchy-node->db-row hierarchy-node)))))
 
 (defn get-or-create-hierarchy-id
   "Gets the ID from a hierarchy-node. If the node has never been
@@ -125,24 +117,22 @@
 
 (defn insert-task
   "Inserts the task to the database, returning the updated Task"
-  ; TODO: rename parameter to "task"
-  [db-config new-task username]
-  (from-db-row
+  [db-config task username]
+  (db-row->task
     (first (jdbc/insert! db-config
-                         :task (assoc (to-db-row new-task)
+                         :task (assoc (task->db-row task)
                                       :created_by username
                                       :last_modified_by username)))))
 
 (defn save-task
   "Saves a new task to the database"
-  ; TODO: rename parameter to "task"
-  [db-config new-task username]
+  [db-config task username]
   (jdbc/db-transaction*
     db-config
     (fn [transaction-config]
-      (let [hierarchy-node (:hierarchy-node new-task)
+      (let [hierarchy-node (:hierarchy-node task)
             hierarchy-id (get-or-create-hierarchy-id transaction-config hierarchy-node)
-            updated-task (assoc-in new-task [:hierarchy-node :hierarchy-id] hierarchy-id)]
+            updated-task (assoc-in task [:hierarchy-node :hierarchy-id] hierarchy-id)]
         {:hierarchy (assoc hierarchy-node :hierarchy-id hierarchy-id)
          :task (insert-task transaction-config updated-task username)}))))
 
