@@ -5,25 +5,28 @@ Based on https://arxiv.org/pdf/0806.3115.pdf
 You can create a new hierarchy with:
 
 ```clojure
-(require '[task-tracker.hierarchy :as tracker :refer [create-root add-child]])
+(require '[task-tracker.hierarchy :as hierarchy :refer [create-root add-child]])
 
-(let [root (tracker/create-root 3)]
-      ; #task_tracker.core.HierarchyNode{:this-numerator 3,
-      ;                                  :this-denominator 1,
-      ;                                  :next-numerator 4,
-      ;                                  :next-denominator 1,
-      ;                                  :num-children 0}
-  (tracker/add-child root))
-; {:root #task_tracker.core.HierarchyNode{:this-numerator 3,
-;                                         :this-denominator 1,
-;                                         :next-numerator 4,
-;                                         :next-denominator 1,
-;                                         :num-children 1},
-;  :child #task_tracker.core.HierarchyNode{:this-numerator 7,
-;                                          :this-denominator 2,
-;                                          :next-numerator 11,
-;                                          :next-denominator 3,
-;                                          :num-children 0}}
+; Create the root hierarchy node of a project:
+(def root (hierarchy/create-root 3))
+; {:this-numerator 3,
+;  :this-denominator 1,
+;  :next-numerator 4,
+;  :next-denominator 1,
+;  :num-children 0}
+
+; Create the hierarchy node representing a subtask of that root
+(hierarchy/add-child root)
+; {:root {:this-numerator 3,
+;         :this-denominator 1,
+;         :next-numerator 4,
+;         :next-denominator 1,
+;         :num-children 1},
+;  :child {:this-numerator 7,
+;          :this-denominator 2,
+;          :next-numerator 11,
+;          :next-denominator 3,
+;          :num-children 0}}
 ```
 
 # Tasks
@@ -31,22 +34,91 @@ You can create a new hierarchy with:
 You can create a new task with:
 
 ```clojure
-(require '[task-tracker.hierarchy :as hierarchy :refer [create-root]]
-         '[task-tracker.task :as task :refer [create-task]])
+(require '[task-tracker.hierarchy :as hierarchy :refer [create-root]])
 
-(task/create-task "This is an issue link" (hierarchy/create-root 3))
-; #task_tracker.task.Task{:task-id nil,
-;                         :hierarchy-node #task_tracker.hierarchy.Node{
-;                           :hierarchy-id nil,
-;                           :this-numerator 3,
-;                           :this-denominator 1,
-;                           :next-numerator 4,
-;                           :next-denominator 1,
-;                           :num-children 0},
-;                         :issue-link "This is an issue link",
-;                         :estimated-time-minutes nil,
-;                         :actual-time-minutes nil}
+; Assume you're using the "root" defined above.
+(def task {:actual-time-minutes 10
+           :estimated-time-minutes 30
+           :hierarchy-node root
+           :issue-link "This is an issue link"})
 ```
+
+# Persistence
+
+To save a task, you'll need to:
+
+1. Get the database configuration so you can connect
+
+   ```clojure
+   ; A database configuration is a map with the following keys:
+   {:dbname   "The name of the database within postgres"
+    :dbtype   "Currently the only supported type is 'postgres'"
+    :host     "The URL of the machine hosting the postgres instance"
+    :password "The password for the :username of the database"
+    :port     "The port number on the host machine to use to connect"
+    :user     "The log-in name for a user of the database"}
+
+   ; You can create a secret in AWS Secrets Manager to hold the
+   ; configuration. If you do, set up your AWS credentials in your
+   ; environment and then run:
+   (require '[task-tracker.persistence :as persistence
+                                       :refer [get-config
+                                               get-secret-from-aws])
+
+   ; (Assuming you named the secret "secret-name" in AWS)
+   (def config (persistence/get-config
+                 (persistence/get-secret-from-aws "secret-name")))
+   ```
+
+1. Create the task map (see above)
+   - Note: The only required key from the task for saving a task is `:hierarchy-node`.
+   - Default values for `:actual-time-minutes` and `:estimated-time-minutes` are both `0`.
+   - The schema doesn't require an `:issue-link`
+1. Use the `task-tracker.persistence/save-task` function
+
+   ```clojure
+   (require '[task-tracker.persistence :as persistence :refer [save-task])
+
+   ; Assume you're using the "task" defined above
+   ; Assume you're using the "config" defined above
+   ; The "username" will be used for auditing purposes
+   (persistence/save-task config task "username")
+   ;{:hierarchy {:this-numerator 3
+   ;             :this-denominator 1
+   ;             :next-numerator 4
+   ;             :next-denominator 1
+   ;             :num-children 0
+   ;             :hierarchy-id 1}
+   ; :task {:last_modified #inst "2019-05-26T15:02:55.310000000-00:00"
+   ;        :deleted nil
+   ;        :issue-link "This is an issue link"
+   ;        :task-id 1
+   ;        :estimated-time-minutes 30
+   ;        :created #inst "2019-05-26T15:02:55.310000000-00:00"
+   ;        :actual-time-minutes 10
+   ;        :last_modified_by "username"
+   ;        :hierarchy_id 1
+   ;        :deleted_by nil
+   ;        :hierarchy-node {:this-numerator 3
+   ;                         :this-denominator 1
+   ;                         :next-numerator 4
+   ;                         :next-denominator 1
+   ;                         :num-children 0
+   ;                         :hierarchy-id 1}
+   ;        :created_by "username"}}
+   ```
+
+   ```postgres
+   dev_chrisreyes_tasktracker=# select * from task where task.task_id = 1;
+     task_id | hierarchy_id | estimated_time_minutes | actual_time_minutes |      issue_link       |          created          | created_by |       last_modified       | last_modified_by | deleted | deleted_by
+    ---------+--------------+------------------------+---------------------+-----------------------+---------------------------+------------+---------------------------+------------------+---------+------------
+           1 |            1 |                     30 |                  10 | This is an issue link | 2019-05-26 15:02:55.31+00 | username   | 2019-05-26 15:02:55.31+00 | username         |         |
+
+   dev_chrisreyes_tasktracker=# select * from hierarchy where hierarchy.hierarchy_id = 1;
+     hierarchy_id | numerator | denominator | next_sibling_numerator | next_sibling_denominator
+    --------------+-----------+-------------+------------------------+--------------------------
+                1 |         3 |           1 |                      4 |                        1
+   ```
 
 # Postgres
 
