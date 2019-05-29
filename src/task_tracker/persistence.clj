@@ -121,7 +121,7 @@
                                       :last_modified_by username)))))
 
 (defn save-task
-  "Saves a new task to the database"
+  "Saves a new task to the database. The task must have a hierarchy-node."
   [db-config task username]
   (jdbc/db-transaction*
     db-config
@@ -130,9 +130,8 @@
             hierarchy-id (get-or-create-hierarchy-id transaction-config hierarchy-node)
             updated-hierarchy-node (assoc hierarchy-node :hierarchy-id hierarchy-id)
             updated-task (assoc task :hierarchy-node updated-hierarchy-node)]
-        {:hierarchy updated-hierarchy-node
-         :task (assoc (insert-task transaction-config updated-task username)
-                      :hierarchy-node updated-hierarchy-node)}))))
+         (assoc (insert-task transaction-config updated-task username)
+                :hierarchy-node updated-hierarchy-node)))))
 
 (defn get-next-root
   "Queries for the next root numerator to insert"

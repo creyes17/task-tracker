@@ -83,29 +83,23 @@ To save a task, you'll need to:
    ; Assume you're using the "config" defined above
    ; The "username" will be used for auditing purposes
    (persistence/save-task config task "username")
-   ;{:hierarchy {:this-numerator 3
-   ;             :this-denominator 1
-   ;             :next-numerator 4
-   ;             :next-denominator 1
-   ;             :num-children 0
-   ;             :hierarchy-id 1}
-   ; :task {:last_modified #inst "2019-05-26T15:02:55.310000000-00:00"
-   ;        :deleted nil
-   ;        :issue-link "This is an issue link"
-   ;        :task-id 1
-   ;        :estimated-time-minutes 30
-   ;        :created #inst "2019-05-26T15:02:55.310000000-00:00"
-   ;        :actual-time-minutes 10
-   ;        :last_modified_by "username"
-   ;        :hierarchy_id 1
-   ;        :deleted_by nil
-   ;        :hierarchy-node {:this-numerator 3
-   ;                         :this-denominator 1
-   ;                         :next-numerator 4
-   ;                         :next-denominator 1
-   ;                         :num-children 0
-   ;                         :hierarchy-id 1}
-   ;        :created_by "username"}}
+   ; {:last_modified #inst "2019-05-26T15:02:55.310000000-00:00"
+   ;  :deleted nil
+   ;  :issue-link "This is an issue link"
+   ;  :task-id 1
+   ;  :estimated-time-minutes 30
+   ;  :created #inst "2019-05-26T15:02:55.310000000-00:00"
+   ;  :actual-time-minutes 10
+   ;  :last_modified_by "username"
+   ;  :hierarchy_id 1
+   ;  :deleted_by nil
+   ;  :hierarchy-node {:this-numerator 3
+   ;                   :this-denominator 1
+   ;                   :next-numerator 4
+   ;                   :next-denominator 1
+   ;                   :num-children 0
+   ;                   :hierarchy-id 1}
+   ;  :created_by "username"}
    ```
 
    ```postgres
