@@ -137,8 +137,31 @@
   "Queries for the next root numerator to insert"
   [db-config]
   (:max (first (jdbc/query db-config "select
-                                        max(hierarchy.next_sibling_numerator) as max
+                                        coalesce(
+                                          max(
+                                            hierarchy.next_sibling_numerator),
+                                          1) as max
                                       from
                                         hierarchy
                                       where
                                         hierarchy.denominator = 1"))))
+
+(defn get-all-roots
+  [db-config]
+  (map #(db-row->task %)
+       (jdbc/query db-config "select
+                                task.actual_time_minutes,
+                                task.estimated_time_minutes,
+                                task.issue_link,
+                                task.task_id,
+                                hierarchy.hierarchy_id,
+                                hierarchy.denominator,
+                                hierarchy.next_sibling_denominator,
+                                hierarchy.next_sibling_numerator,
+                                hierarchy.numerator
+                              from
+                                hierarchy
+                                join task
+                                  on hierarchy.hierarchy_id = task.hierarchy_id
+                              where
+                                hierarchy.denominator = 1")))

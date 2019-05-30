@@ -23,7 +23,7 @@
   "Adds a child to `hierarchy-node`.
   Returns both the updated :root and the newly created :child."
   [hierarchy-node]
-  (let [child-num (inc (:num-children hierarchy-node))]
+  (let [child-num (inc (get hierarchy-node :num-children 0))]
     {:hierarchy-node (assoc hierarchy-node :num-children child-num)
      :child {:this-numerator (get-child-value child-num
                                               (:this-numerator hierarchy-node)
