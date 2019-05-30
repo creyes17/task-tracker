@@ -87,14 +87,14 @@
   a saved hierarchy with the same numerator/denominator."
   [db-config hierarchy-node]
   (:hierarchy_id (first (jdbc/query db-config ["select
-                                          hierarchy.hierarchy_id
-                                        from
-                                          hierarchy
-                                        where
-                                          hierarchy.numerator = ?
-                                          and hierarchy.denominator = ?"
-                                       (:numerator hierarchy-node)
-                                       (:denominator hierarchy-node)]))))
+                                                  hierarchy.hierarchy_id
+                                                from
+                                                  hierarchy
+                                                where
+                                                  hierarchy.numerator = ?
+                                                  and hierarchy.denominator = ?"
+                                               (:numerator hierarchy-node)
+                                               (:denominator hierarchy-node)]))))
 
 (defn insert-hierarchy-node
   "Saves a hierarchy node to the database, returning the ID"
@@ -137,8 +137,8 @@
   "Queries for the next root numerator to insert"
   [db-config]
   (:max (first (jdbc/query db-config "select
-                                       max(hierarchy.next_sibling_numerator) as max
-                                     from
-                                       hierarchy
-                                     where
-                                       hierarchy.denominator = 1"))))
+                                        max(hierarchy.next_sibling_numerator) as max
+                                      from
+                                        hierarchy
+                                      where
+                                        hierarchy.denominator = 1"))))
