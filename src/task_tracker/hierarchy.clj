@@ -22,21 +22,21 @@
   (+ parent-value (* n parent-next-sibling-value)))
 
 (defn add-child
-  "Adds a child to `root`.
+  "Adds a child to `hierarchy-node`.
   Returns both the updated :root and the newly created :child."
-  [root]
-  (let [child-num (inc (:num-children root))]
-    {:root (assoc root :num-children child-num)
+  [hierarchy-node]
+  (let [child-num (inc (:num-children hierarchy-node))]
+    {:hierarchy-node (assoc hierarchy-node :num-children child-num)
      :child {:this-numerator (get-child-value child-num
-                                              (:this-numerator root)
-                                              (:next-numerator root))
+                                              (:this-numerator hierarchy-node)
+                                              (:next-numerator hierarchy-node))
              :this-denominator (get-child-value child-num
-                                                (:this-denominator root)
-                                                (:next-denominator root))
+                                                (:this-denominator hierarchy-node)
+                                                (:next-denominator hierarchy-node))
              :next-numerator (get-child-value (inc child-num)
-                                              (:this-numerator root)
-                                              (:next-numerator root))
+                                              (:this-numerator hierarchy-node)
+                                              (:next-numerator hierarchy-node))
              :next-denominator (get-child-value (inc child-num)
-                                                (:this-denominator root)
-                                                (:next-denominator root))
+                                                (:this-denominator hierarchy-node)
+                                                (:next-denominator hierarchy-node))
              :num-children 0}}))
