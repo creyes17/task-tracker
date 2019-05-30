@@ -1,8 +1,6 @@
 (ns task-tracker.hierarchy
   (:gen-class))
 
-; TODO: Create clojure.spec
-; https://clojure.org/about/spec
 (defn create-root
   "Creates a new root hierarchy node.
   The resulting hierarchy node. will have `(= (/ :this-numerator :this-denominator) value)`"
