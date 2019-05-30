@@ -22,11 +22,11 @@ TODO: Implement and flesh this out.
 
 To start the default postgres service, run `docker-compose up`. You can then connect to the running postgres instance with `docker-compose exec postgres psql`.
 
-To run the example query (after starting the postgres service with `docker-compose up`), do `lein run`.
+To create a new task (after starting the postgres service with `docker-compose up`), do `lein run`.
 
 - Note: make sure to stop any running postgres services via brew with `brew services stop postgres`. Otherwise you won't be able to connect to postgres on the docker image.
 
-  \$ java -jar task-tracker-0.1.0-standalone.jar [args]
+  \$ java -jar task-tracker-0.1.0-standalone.jar
 
 ## Options
 

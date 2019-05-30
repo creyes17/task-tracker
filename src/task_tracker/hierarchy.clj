@@ -1,21 +1,15 @@
 (ns task-tracker.hierarchy
   (:gen-class))
 
-(defrecord Node [this-numerator
-                 this-denominator
-                 next-numerator
-                 next-denominator
-                 num-children])
-
 (defn create-root
-  "Creates a new root `task-tracker.core/Node`.
-  The resulting `task-tracker.core/Node` will have `(= (/ :this-numerator :this-denominator) value)`"
+  "Creates a new root hierarchy node.
+  The resulting hierarchy node. will have `(= (/ :this-numerator :this-denominator) value)`"
   [value]
-  (map->Node {:this-numerator value
-              :this-denominator 1
-              :next-numerator (inc value)
-              :next-denominator 1
-              :num-children 0}))
+  {:this-numerator value
+   :this-denominator 1
+   :next-numerator (inc value)
+   :next-denominator 1
+   :num-children 0})
 
 (defn get-child-value
   "Calculates the value of the child object.
@@ -26,22 +20,21 @@
   (+ parent-value (* n parent-next-sibling-value)))
 
 (defn add-child
-  "Adds a child to `root`.
+  "Adds a child to `hierarchy-node`.
   Returns both the updated :root and the newly created :child."
-  [root]
-  (let [child-num (inc (:num-children root))]
-    {:root (assoc root :num-children child-num)
-     :child (map->Node {:this-numerator (get-child-value child-num
-                                                         (:this-numerator root)
-                                                         (:next-numerator root))
-                        :this-denominator (get-child-value child-num
-                                                         (:this-denominator root)
-                                                         (:next-denominator root))
-                        :next-numerator (get-child-value (inc child-num)
-                                                         (:this-numerator root)
-                                                         (:next-numerator root))
-                        :next-denominator (get-child-value (inc child-num)
-                                                         (:this-denominator root)
-                                                         (:next-denominator root))
-                        :num-children 0})}))
-
+  [hierarchy-node]
+  (let [child-num (inc (:num-children hierarchy-node))]
+    {:hierarchy-node (assoc hierarchy-node :num-children child-num)
+     :child {:this-numerator (get-child-value child-num
+                                              (:this-numerator hierarchy-node)
+                                              (:next-numerator hierarchy-node))
+             :this-denominator (get-child-value child-num
+                                                (:this-denominator hierarchy-node)
+                                                (:next-denominator hierarchy-node))
+             :next-numerator (get-child-value (inc child-num)
+                                              (:this-numerator hierarchy-node)
+                                              (:next-numerator hierarchy-node))
+             :next-denominator (get-child-value (inc child-num)
+                                                (:this-denominator hierarchy-node)
+                                                (:next-denominator hierarchy-node))
+             :num-children 0}}))

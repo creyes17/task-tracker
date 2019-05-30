@@ -11,6 +11,7 @@
                  [com.cognitect.aws/endpoints "1.1.11.549"]
                  [com.cognitect.aws/secretsmanager "707.2.405.0"]
                  [org.clojure/java.jdbc "0.7.9"]
+                 [org.clojure/test.check "0.9.0"]
                  [org.postgresql/postgresql "42.2.5.jre7"]]
   :main ^:skip-aot task-tracker.core
   :target-path "target/%s"
