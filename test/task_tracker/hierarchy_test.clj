@@ -34,7 +34,7 @@
   (testing "Can add a child to a root"
     (let [root (create-root 1)
           result (add-child root)
-          updated-root (:root result)
+          updated-root (:hierarchy-node result)
           child (:child result)]
       (is (some? updated-root) "Should have returned the updated root")
       (is (some? child) "Should have created a child node")
