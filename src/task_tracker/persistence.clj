@@ -43,7 +43,9 @@
   "Given a database row representing a hierarchy node,
   return the canonical hierarchy node representation"
   [db-row]
-  (rename-keys db-row (map-invert (:hierarchy db-schema))))
+  (rename-keys db-row
+               (assoc (map-invert (:hierarchy db-schema))
+                      :num_children :num-children)))
 
 (defn db-row->task
   "Given a database row representing a task,
@@ -137,8 +139,45 @@
   "Queries for the next root numerator to insert"
   [db-config]
   (:max (first (jdbc/query db-config "select
-                                        max(hierarchy.next_sibling_numerator) as max
+                                        coalesce(
+                                          max(
+                                            hierarchy.next_sibling_numerator),
+                                          1) as max
                                       from
                                         hierarchy
                                       where
                                         hierarchy.denominator = 1"))))
+
+(defn get-all-roots
+  "Finds all of the root-level ::task objects from the database."
+  [db-config]
+  (map db-row->task
+       (jdbc/query db-config "select
+                                task.actual_time_minutes,
+                                task.estimated_time_minutes,
+                                task.issue_link,
+                                task.task_id,
+                                hierarchy.hierarchy_id,
+                                hierarchy.denominator,
+                                hierarchy.next_sibling_denominator,
+                                hierarchy.next_sibling_numerator,
+                                hierarchy.numerator,
+                                count(subtask.hierarchy_id) as num_children
+                              from
+                                hierarchy
+                                join task
+                                  on hierarchy.hierarchy_id = task.hierarchy_id
+                                left outer join hierarchy subtask
+                                  on is_subtask(hierarchy, subtask)
+                              where
+                                hierarchy.denominator = 1
+                              group by
+                                task.actual_time_minutes,
+                                task.estimated_time_minutes,
+                                task.issue_link,
+                                task.task_id,
+                                hierarchy.hierarchy_id,
+                                hierarchy.denominator,
+                                hierarchy.next_sibling_denominator,
+                                hierarchy.next_sibling_numerator,
+                                hierarchy.numerator")))

@@ -6,10 +6,14 @@
   (testing "Can create root"
     (doseq [value [1 2]]
       (let [root (create-root value)]
-        (is (= (:this-numerator root) value) "Numerator should be the supplied value")
-        (is (= (:this-denominator root) 1) "Denominator for root tasks is always 1")
-        (is (= (:next-numerator root) (inc value)) "Numerator for next root Task should be incremented")
-        (is (= (:next-denominator root) 1) "Denominator for root tasks is always 1")
+        (is (= (:this-numerator root) value)
+            "Numerator should be the supplied value")
+        (is (= (:this-denominator root) 1)
+            "Denominator for root tasks is always 1")
+        (is (= (:next-numerator root) (inc value))
+            "Numerator for next root Task should be incremented")
+        (is (= (:next-denominator root) 1)
+            "Denominator for root tasks is always 1")
         (is (= (:num-children root) 0) "Root tasks start with no children")))))
 
 (deftest get-child-value-test
@@ -32,7 +36,10 @@
 
 (deftest add-child-test
   (testing "Can add a child to a root"
-    (let [root (create-root 1)
+    (let [root {:this-numerator 1
+                :this-denominator 1
+                :next-numerator 2
+                :next-denominator 1}
           result (add-child root)
           updated-root (:hierarchy-node result)
           child (:child result)]
@@ -45,8 +52,7 @@
         (is (= (get root prop)
                (get updated-root prop))
             (str "Should not have altered root " prop " property")))
-      (is (= (:num-children updated-root)
-             (inc (:num-children root)))
+      (is (= (:num-children updated-root) 1)
           "Should have added one child")
       (is (= (:this-numerator child)
              (get-child-value (:num-children updated-root)
@@ -68,4 +74,5 @@
                               (:this-denominator updated-root)
                               (:next-denominator updated-root)))
           "Should have set next denominator value based on get child value")
-      (is (= (:num-children child) 0) "Child nodes should be created without children of their own"))))
+      (is (= (:num-children child) 0)
+          "Child nodes should be created without children of their own"))))

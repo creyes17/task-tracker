@@ -135,11 +135,13 @@
           this-denominator 15
           next-sibling-numerator 16
           next-sibling-denominator 17
+          num-children 18
           db-row {:hierarchy_id hierarchy-id
                   :denominator this-denominator
                   :numerator this-numerator
                   :next_sibling_denominator next-sibling-denominator
-                  :next_sibling_numerator next-sibling-numerator}
+                  :next_sibling_numerator next-sibling-numerator
+                  :num_children num-children}
           hierarchy-node (persistence/db-row->hierarchy-node db-row)]
       (is (= (:hierarchy-id hierarchy-node) hierarchy-id)
           "Should preserve hierarchy_id in hierarchy-id field")
@@ -152,8 +154,10 @@
                "in next-denominator field"))
       (is (= (:next-numerator hierarchy-node) next-sibling-numerator)
           (str "Should preserve next sibling's numerator "
-               "in next-numerator field")))))
-
+               "in next-numerator field"))
+      (is (= (:num-children hierarchy-node) num-children)
+          (str "Should preserve number of children "
+               "in num-children field")))))
 
 (deftest get-or-create-hierarchy-id-test
   (testing "Can get hierarchy-id from hierarchy-node"
