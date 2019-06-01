@@ -141,7 +141,7 @@
                   :numerator this-numerator
                   :next_sibling_denominator next-sibling-denominator
                   :next_sibling_numerator next-sibling-numerator
-                  :num_children 18}
+                  :num_children num-children}
           hierarchy-node (persistence/db-row->hierarchy-node db-row)]
       (is (= (:hierarchy-id hierarchy-node) hierarchy-id)
           "Should preserve hierarchy_id in hierarchy-id field")
