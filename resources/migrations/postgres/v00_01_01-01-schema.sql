@@ -1,5 +1,5 @@
 /* 
- * Defines the schema for the task-tracker.
+ * Defines the schema for a ::hierarchy-node in the task-tracker.
  * Written for PostgreSQL
  */
 create table if not exists hierarchy (
