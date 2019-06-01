@@ -149,9 +149,9 @@
                                         hierarchy.denominator = 1"))))
 
 (defn get-all-roots
-  ""
+  "Finds all of the root-level ::task objects from the database."
   [db-config]
-  (map #(db-row->task %)
+  (map db-row->task
        (jdbc/query db-config "select
                                 task.actual_time_minutes,
                                 task.estimated_time_minutes,
