@@ -184,3 +184,9 @@ dev_chrisreyes_tasktracker=# \d task_audit
 Foreign-key constraints:
     "task_audit_task_id_fkey" FOREIGN KEY (task_id) REFERENCES task(task_id)
 ```
+
+## License
+
+Copyright &copy; 2019 Christopher R Reyes
+
+This project is licensed under the GNU General Public License v3.0.
