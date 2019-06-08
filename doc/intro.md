@@ -5,7 +5,9 @@ Based on https://arxiv.org/pdf/0806.3115.pdf
 You can create a new hierarchy with:
 
 ```clojure
-(require '[task-tracker.hierarchy :as hierarchy :refer [create-root add-child]])
+(require '[dev.chrisreyes.task-tracker.hierarchy
+           :as hierarchy
+           :refer [create-root add-child]])
 
 ; Create the root hierarchy node of a project:
 (def root (hierarchy/create-root 3))
@@ -34,7 +36,9 @@ You can create a new hierarchy with:
 You can create a new task with:
 
 ```clojure
-(require '[task-tracker.hierarchy :as hierarchy :refer [create-root]])
+(require '[dev.chrisreyes.task-tracker.hierarchy
+           :as hierarchy
+           :refer [create-root]])
 
 ; Assume you're using the "root" defined above.
 (def task {:actual-time-minutes 10
@@ -61,9 +65,9 @@ To save a task, you'll need to:
    ; You can create a secret in AWS Secrets Manager to hold the
    ; configuration. If you do, set up your AWS credentials in your
    ; environment and then run:
-   (require '[task-tracker.persistence :as persistence
-                                       :refer [get-config
-                                               get-secret-from-aws])
+   (require '[dev.chrisreyes.task-tracker.persistence
+              :as persistence
+              :refer [get-config get-secret-from-aws])
 
    ; (Assuming you named the secret "secret-name" in AWS)
    (def config (persistence/get-config
@@ -74,10 +78,12 @@ To save a task, you'll need to:
    - Note: The only required key from the task for saving a task is `:hierarchy-node`.
    - Default values for `:actual-time-minutes` and `:estimated-time-minutes` are both `0`.
    - The schema doesn't require an `:issue-link`
-1. Use the `task-tracker.persistence/save-task` function
+1. Use the `dev.chrisreyes.task-tracker.persistence/save-task` function
 
    ```clojure
-   (require '[task-tracker.persistence :as persistence :refer [save-task])
+   (require '[dev.chrisreyes.task-tracker.persistence
+              :as persistence
+              :refer [save-task])
 
    ; Assume you're using the "task" defined above
    ; Assume you're using the "config" defined above

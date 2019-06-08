@@ -15,9 +15,9 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns task-tracker.hierarchy-test
+(ns dev.chrisreyes.task-tracker.hierarchy-test
   (:require [clojure.test :refer :all]
-            [task-tracker.hierarchy :refer :all]))
+            [dev.chrisreyes.task-tracker.hierarchy :refer :all]))
 
 (deftest create-root-test
   (testing "Can create root"
