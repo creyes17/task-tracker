@@ -15,20 +15,10 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns task-tracker.core
-  (:gen-class)
-  (:require [task-tracker.hierarchy :as hierarchy]
-            [task-tracker.persistence :as persistence]))
+(ns dev.chrisreyes.task-tracker.core-test
+  (:require [clojure.test :refer :all]
+            [dev.chrisreyes.task-tracker.core :refer :all]))
 
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (let [db-config (persistence/get-config
-                    (persistence/get-secret-from-aws
-                      (persistence/get-credentials-secret)))
-        this-numerator (persistence/get-next-root db-config)
-        next-root (hierarchy/create-root this-numerator)
-        task {:hierarchy-node next-root
-              :issue-link (str "Hello " this-numerator " World")
-              :estimated-time-minutes 30}]
-    (persistence/save-task db-config task (System/getenv "USER"))))
+(deftest main-test
+  (testing "Has main function"
+    (is (some? -main) "Core should define a -main function")))

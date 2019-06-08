@@ -15,7 +15,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns task-tracker.persistence
+(ns dev.chrisreyes.task-tracker.persistence
   (:gen-class)
   (:require [cheshire.core :as json]
             [clojure.java.jdbc :as jdbc]

@@ -30,6 +30,6 @@
                  [org.clojure/java.jdbc "0.7.9"]
                  [org.clojure/test.check "0.9.0"]
                  [org.postgresql/postgresql "42.2.5.jre7"]]
-  :main ^:skip-aot task-tracker.core
+  :main ^:skip-aot dev.chrisreyes.task-tracker.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

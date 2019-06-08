@@ -15,10 +15,10 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns task-tracker.persistence-test
+(ns dev.chrisreyes.task-tracker.persistence-test
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.test :refer :all]
-            [task-tracker.persistence :as persistence]))
+            [dev.chrisreyes.task-tracker.persistence :as persistence]))
 
 (deftest filter-nil-values-test
   (testing "Edge cases for filter-nil-values"

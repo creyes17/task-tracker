@@ -17,9 +17,9 @@
 
 (ns ^{:author "Christopher R Reyes"
       :doc "Optional specifications for use with Clojure 1.9 or later."}
-  task-tracker.spec
+  dev.chrisreyes.task-tracker.spec
   (:require [clojure.spec.alpha :as spec]
-            [task-tracker.hierarchy :as hierarchy]))
+            [dev.chrisreyes.task-tracker.hierarchy :as hierarchy]))
 
 ;; Hierarchy Node schema
 ;; See https://arxiv.org/pdf/0806.3115.pdf

@@ -15,7 +15,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns task-tracker.hierarchy
+(ns dev.chrisreyes.task-tracker.hierarchy
   (:gen-class))
 
 (defn create-root
