@@ -15,7 +15,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns dev.chrisreyes.task-tracker.hierarchy
+(ns
+  ^{:author "Christopher R. Reyes"}
+  dev.chrisreyes.task-tracker.hierarchy
+  "This is a collection of operations for working with hierarchical data.
+  This is based on https://arxiv.org/pdf/0806.3115.pdf.
+  Hazel, Dan. \"Using rational numbers to key nested sets.\" arXiv preprint arXiv:0806.3115 (2008)."
   (:gen-class))
 
 (defn create-root
