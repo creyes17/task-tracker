@@ -15,7 +15,9 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns dev.chrisreyes.task-tracker.core-test
+(ns
+  ^{:author "Christopher R. Reyes"}
+  dev.chrisreyes.task-tracker.core-test
   (:require [clojure.test :refer :all]
             [dev.chrisreyes.task-tracker.core :refer :all]))
 
