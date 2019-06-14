@@ -15,7 +15,13 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns dev.chrisreyes.task-tracker.core
+(ns
+  ^{:author "Christopher R. Reyes"}
+  dev.chrisreyes.task-tracker.core
+  "Here we coordinate between the different layers of the app.
+  Eventually, this namespace will be responsible for allowing
+  end-users to interact with the system by creating, reading,
+  updating, and deleting tasks."
   (:gen-class)
   (:require [dev.chrisreyes.task-tracker.hierarchy :as hierarchy]
             [dev.chrisreyes.task-tracker.persistence :as persistence]))

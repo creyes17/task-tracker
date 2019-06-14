@@ -15,7 +15,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns dev.chrisreyes.task-tracker.persistence
+(ns
+  ^{:author "Christopher R. Reyes"}
+  dev.chrisreyes.task-tracker.persistence
+  "These are functions for working with a postgres database.
+  They provide CRUD operations for our model types in
+  persistent storage."
   (:gen-class)
   (:require [cheshire.core :as json]
             [clojure.java.jdbc :as jdbc]

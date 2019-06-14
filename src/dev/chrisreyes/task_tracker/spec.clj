@@ -15,9 +15,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with Task Tracker.  If not, see <https://www.gnu.org/licenses/>.
 
-(ns ^{:author "Christopher R Reyes"
-      :doc "Optional specifications for use with Clojure 1.9 or later."}
+(ns
+  ^{:author "Christopher R Reyes"}
   dev.chrisreyes.task-tracker.spec
+  "These optional specifications are for use with Clojure 1.9 or later.
+  They describe the contents of the various maps that are passed around
+  the application."
   (:require [clojure.spec.alpha :as spec]
             [dev.chrisreyes.task-tracker.hierarchy :as hierarchy]))
 
