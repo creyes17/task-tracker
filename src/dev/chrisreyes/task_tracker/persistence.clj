@@ -203,3 +203,10 @@
                                 hierarchy.next_sibling_denominator,
                                 hierarchy.next_sibling_numerator,
                                 hierarchy.numerator")))
+
+(defn remove-task
+  "Deletes a particular task by task ID, returning the number of rows deleted."
+  [db-config task-id username]
+  (jdbc/delete! db-config
+                :task
+                ["task_id = ?", task-id]))

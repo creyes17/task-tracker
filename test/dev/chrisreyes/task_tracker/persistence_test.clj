@@ -250,3 +250,9 @@
                 (str "Should have preserved the "
                      prop
                      " property in the original task"))))))))
+
+(deftest delete-task-test
+  (testing "Can delete a task from persistent storage"
+    (with-redefs [jdbc/db-transaction* (fn [config f] (f config))
+                  persistence/remove-task (fn [_ task _] task)]
+      (print "todo"))))
