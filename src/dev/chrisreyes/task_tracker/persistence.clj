@@ -206,15 +206,14 @@
 
 (defn remove-task
   "Deletes a particular task by task ID, returning the number of rows deleted."
-  [db-config task-id username]
+  [db-config task-id]
   (jdbc/delete! db-config
                 :task
                 ["task_id = ?", task-id]))
 
-
 (defn remove-subtasks
   "Deletes all subtasks of a particular task, returning the number of subtasks deleted."
-  [db-config parent-task-id username]
+  [db-config parent-task-id]
   (jdbc/execute! db-config
                  ["delete
                    from

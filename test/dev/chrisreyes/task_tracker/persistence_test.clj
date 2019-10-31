@@ -20,7 +20,8 @@
   dev.chrisreyes.task-tracker.persistence-test
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.test :refer :all]
-            [dev.chrisreyes.task-tracker.persistence :as persistence]))
+            [dev.chrisreyes.task-tracker.persistence :as persistence]
+            [clojure.string :as string]))
 
 (deftest filter-nil-values-test
   (testing "Edge cases for filter-nil-values"
@@ -250,3 +251,38 @@
                 (str "Should have preserved the "
                      prop
                      " property in the original task"))))))))
+
+(deftest remove-task-test
+  (testing "Can remove a task from persistent storage"
+    (with-redefs [jdbc/delete! (fn [config table where]  [table where])]
+      ; Note: I want to use an invalid value as the task ID for this test
+      ;       in case the code changes in the future to not use the
+      ;       jdbc/delete! method. I wouldn't want to accidentally delete
+      ;       a real/valid database row in a test.
+      (let [task-id "some-task-id"
+            [table where] (persistence/remove-task nil task-id)
+            query (string/replace (first where) #"\s+" " ")
+            binds (rest where)]
+        (is (= table :task) "Should be deleting from the task table")
+        (is (string/includes? query "task_id = ?")
+            "Should be deleting a task by task_id")
+        (is (some #(= task-id %) binds)
+            "Should be deleting using the correct ID")))))
+
+(deftest remove-subtasks-test
+  (testing "Can remove all subtasks of a task from persistent storage"
+    (with-redefs [jdbc/execute! (fn [config where] where)]
+      ; Note: I want to use an invalid value as the task ID for this test
+      ;       in case the code changes in the future to not use the
+      ;       jdbc/delete! method. I wouldn't want to accidentally delete
+      ;       a real/valid database row in a test.
+      (let [task-id "invalid-parent-task"
+            where (persistence/remove-subtasks nil task-id)
+            query (string/replace (first where) #"\s+" " ")
+            binds (rest where)]
+        (is (string/includes? query "delete from task")
+            "Should be deleting subtasks from the task table")
+        (is (string/includes? query "task_id = ?")
+            "Should be finding the task by task_id")
+        (is (some #(= task-id %) binds)
+            "Should be deleting using the correct ID")))))
