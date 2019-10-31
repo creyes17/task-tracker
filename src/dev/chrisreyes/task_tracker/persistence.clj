@@ -210,3 +210,27 @@
   (jdbc/delete! db-config
                 :task
                 ["task_id = ?", task-id]))
+
+
+(defn remove-subtasks
+  "Deletes all subtasks of a particular task, returning the number of subtasks deleted."
+  [db-config parent-task-id username]
+  (jdbc/execute! db-config
+                 ["delete
+                   from
+                     task
+                   where
+                     task.task_id in (
+                       select
+                         subtask.task_id
+                       from
+                         task parent
+                         join hierarchy
+                           on parent = hierarchy.hierarchy_id
+                         left outer join hierarchy subtask_hierarchy
+                           on is_subtask(hierarchy, subtask_hierarchy)
+                         join task subtask
+                           on subtask.hierarchy_id = subtask_hierarchy.hierarchy_id
+                       where
+                         parent.task_id = ?)"
+                  parent-task-id]))
