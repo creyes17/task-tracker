@@ -225,7 +225,7 @@
                        from
                          task parent
                          join hierarchy
-                           on parent = hierarchy.hierarchy_id
+                           on parent.hierarchy_id = hierarchy.hierarchy_id
                          left outer join hierarchy subtask_hierarchy
                            on is_subtask(hierarchy, subtask_hierarchy)
                          join task subtask
