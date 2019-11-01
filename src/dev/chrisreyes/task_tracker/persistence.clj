@@ -203,3 +203,33 @@
                                 hierarchy.next_sibling_denominator,
                                 hierarchy.next_sibling_numerator,
                                 hierarchy.numerator")))
+
+(defn remove-task
+  "Deletes a particular task by task ID, returning the number of rows deleted."
+  [db-config task-id]
+  (jdbc/delete! db-config
+                :task
+                ["task_id = ?", task-id]))
+
+(defn remove-subtasks
+  "Deletes all subtasks of a particular task, returning the number of subtasks deleted."
+  [db-config parent-task-id]
+  (jdbc/execute! db-config
+                 ["delete
+                   from
+                     task
+                   where
+                     task.task_id in (
+                       select
+                         subtask.task_id
+                       from
+                         task parent
+                         join hierarchy
+                           on parent.hierarchy_id = hierarchy.hierarchy_id
+                         left outer join hierarchy subtask_hierarchy
+                           on is_subtask(hierarchy, subtask_hierarchy)
+                         join task subtask
+                           on subtask.hierarchy_id = subtask_hierarchy.hierarchy_id
+                       where
+                         parent.task_id = ?)"
+                  parent-task-id]))
