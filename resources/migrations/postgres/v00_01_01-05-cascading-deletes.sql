@@ -17,14 +17,21 @@
  */
 
 /*
- * Updates the unique constraint from task to hierarchy to cascade 
- * deletes. This way when the task is deleted, the associated
- * hierarchy is also deleted automatically.
+ * Sets up a trigger so that whenever a task is deleted, the associated hierarchy node is also deleted.
  */
 
-alter table task
-drop constraint task_hierarchy_id_fkey,
-add constraint task_hierarchy_id_fkey
-    foreign key (hierarchy_id)
-    references hierarchy (hierarchy_id)
-    on delete cascade;
+create or replace function delete_related_hierarchy () returns trigger as $delete_related_hierarchy$
+    BEGIN
+        delete from
+            hierarchy
+        where
+            hierarchy.hierarchy_id = OLD.hierarchy_id;
+
+        return OLD;
+    END;
+$delete_related_hierarchy$ language plpgsql;
+
+create trigger tg_task_delete_cascade
+    after delete on task
+    for each row
+    execute function delete_related_hierarchy();
