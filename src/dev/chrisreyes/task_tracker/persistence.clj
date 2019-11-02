@@ -184,13 +184,17 @@
                                 hierarchy.next_sibling_denominator,
                                 hierarchy.next_sibling_numerator,
                                 hierarchy.numerator,
-                                count(subtask.hierarchy_id) as num_children
+                                count(subhierarchy.hierarchy_id) as num_children,
+                                sum(subtask.estimated_time_minutes) as children_estimated_time_minutes,
+                                sum(subtask.actual_time_minutes) as children_actual_time_minutes
                               from
                                 hierarchy
                                 join task
                                   on hierarchy.hierarchy_id = task.hierarchy_id
-                                left outer join hierarchy subtask
-                                  on is_subtask(hierarchy, subtask)
+                                left outer join hierarchy subhierarchy
+                                  on is_subtask(hierarchy, subhierarchy)
+                                join task subtask
+                                  on subtask.hierarchy_id = subhierarchy.hierarchy_id
                               where
                                 hierarchy.denominator = 1
                               group by

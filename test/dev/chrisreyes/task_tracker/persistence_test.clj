@@ -127,11 +127,17 @@
           hierarchy-id 11
           issue-link "http://some.url/1234"
           task-id 12
+          num-children 5
+          children-estimate 190
+          children-actual (* 2 children-estimate)
           db-row {:actual_time_minutes actual-time
                   :estimated_time_minutes estimated-time
                   :hierarchy_id hierarchy-id
                   :issue_link issue-link
-                  :task_id task-id}
+                  :task_id task-id
+                  :num_children num-children
+                  :children_estimated_time_minutes children-estimate
+                  :children_actual_time_minutes children-actual}
           task (persistence/db-row->task db-row)]
       (is (= (:actual-time-minutes task) actual-time)
           (str "Should have preserved the actual_time_minutes "
@@ -144,6 +150,19 @@
           "Should load the hierarchy_id into the hierarchy-node")
       (is (= (:issue-link task) issue-link)
           "Should have preserved the task_id into the task-id field")
+      (is (= (:num_children task) num-children)
+          (str "Should not have removed the num_children field even "
+               "though it is not in the schema"))
+      (is (= (:children_estimated_time_minutes task)
+             children-estimate)
+          (str "Should not have removed the "
+               ":children_estimated_time_minutes field even though it is "
+               "not in the schema"))
+      (is (= (:children_actual_time_minutes task)
+             children-actual)
+          (str "Should not have removed the "
+               ":children_actual_time_minutes field even though it is "
+               "not in the schema"))
       (is (= (:task-id task) task-id)
           "Should have preserved the task_id into the task-id field"))))
 
