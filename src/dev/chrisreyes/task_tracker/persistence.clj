@@ -208,6 +208,45 @@
                                 hierarchy.next_sibling_numerator,
                                 hierarchy.numerator")))
 
+(defn load-task-by-id
+  "Loads a specific ::task object by ID from the database"
+  [db-config task-id]
+  (map db-row->task
+       (jdbc/query db-config ["select
+                                 task.actual_time_minutes,
+                                 task.estimated_time_minutes,
+                                 task.issue_link,
+                                 task.task_id,
+                                 hierarchy.hierarchy_id,
+                                 hierarchy.denominator,
+                                 hierarchy.next_sibling_denominator,
+                                 hierarchy.next_sibling_numerator,
+                                 hierarchy.numerator,
+                                 count(subhierarchy.hierarchy_id) as num_children,
+                                 sum(subtask.estimated_time_minutes) as children_estimated_time_minutes,
+                                 sum(subtask.actual_time_minutes) as children_actual_time_minutes
+                               from
+                                 hierarchy
+                                 join task
+                                   on hierarchy.hierarchy_id = task.hierarchy_id
+                                 left outer join hierarchy subhierarchy
+                                   on is_subtask(hierarchy, subhierarchy)
+                                 join task subtask
+                                   on subtask.hierarchy_id = subhierarchy.hierarchy_id
+                               where
+                                 task.task_id = ?
+                               group by
+                                 task.actual_time_minutes,
+                                 task.estimated_time_minutes,
+                                 task.issue_link,
+                                 task.task_id,
+                                 hierarchy.hierarchy_id,
+                                 hierarchy.denominator,
+                                 hierarchy.next_sibling_denominator,
+                                 hierarchy.next_sibling_numerator,
+                                 hierarchy.numerator"
+                              task-id])))
+
 (defn remove-task
   "Deletes a particular task by task ID, returning the number of rows deleted."
   [db-config task-id]
