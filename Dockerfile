@@ -1,5 +1,5 @@
 # Builds the Dockerfile for the backend API server.
-FROM openjdk:14-slim
+FROM openjdk:14
 
 WORKDIR /
 

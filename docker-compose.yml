@@ -40,6 +40,16 @@ services:
         volumes:
             - "./target/data:${PGDATA:-/var/lib/postgresql/data}"
             - "./resources/migrations/postgres:/docker-entrypoint-initdb.d"
+    task-tracker:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        depends_on:
+            - postgres
+        healthcheck:
+            test: curl --fail http://localhost:5000/.internal/is_healthy || exit 1
+        ports:
+            - "${C17_TASKTRACKER_BACKEND_PORT:-5000}:5000"
 
 networks:
     task-net:

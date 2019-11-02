@@ -97,7 +97,7 @@
      (add-subtasks root-task n))))
 
 (compojure.core/defroutes backend-api
-  (compojure.core/GET "/" [] "Hello World!\n"))
+  (compojure.core/GET "/.internal/is_healthy" [] "true\n"))
 
 (defn -main
   "Starts a backend webserver on port 5000 to handle API requests for working with tasks"
