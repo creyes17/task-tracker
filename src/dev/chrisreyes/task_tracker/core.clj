@@ -99,18 +99,10 @@
 (compojure.core/defroutes backend-api
   (compojure.core/GET "/" [] "Hello World!\n"))
 
-(defn get-backend-api-port
-  "Gets the port to use for the backend API as an integer. Defaults to 5000"
-  []
-  (let [env-port (System/getenv "C17_TASKTRACKER_BACKEND_API_PORT")]
-    ; If the environment variable is defined, it will be a string.
-    ; We want to convert it to an integer.
-    ; Otherwise, just return the default.
-    (if (some? env-port)
-      (Integer/parseInt env-port)
-      5000)))
-
 (defn -main
-  "Starts a backend webserver to handle API requests for working with tasks"
+  "Starts a backend webserver on port 5000 to handle API requests for working with tasks"
   [& args]
-  (run-server backend-api {:port (get-backend-api-port)}))
+  ; Note: Chose port 5000 arbitrarily based on a tutorial I was
+  ;       following. It shouldn't really matter assuming we host this in
+  ;       docker-compose because we can remap the port to anything.
+  (run-server backend-api {:port 5000}))
