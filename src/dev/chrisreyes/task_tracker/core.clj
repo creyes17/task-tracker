@@ -26,10 +26,20 @@
   (:require
     [clojure.data.json :as json]
     [compojure.core]
+    [dev.chrisreyes.task-tracker.persistence :as persistence]
     [org.httpkit.server :refer [run-server]]))
 
 (compojure.core/defroutes backend-api
-  (compojure.core/GET "/.internal/is_healthy" [] "true\n"))
+  (compojure.core/GET "/.internal/is_healthy"
+                      []
+                      (json/write-str {:healthy true}))
+  (compojure.core/GET "/project"
+                      []
+                      (json/write-str
+                        (persistence/get-all-roots
+                          (persistence/get-config
+                            (persistence/get-secret-from-aws
+                              (persistence/get-credentials-secret)))))))
 
 (defn -main
   "Starts a backend webserver on port 5000 to handle API requests for working with tasks"

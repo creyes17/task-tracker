@@ -24,7 +24,7 @@
             :key "gpl-3.0"}
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [cheshire "5.8.1"]
-                 [com.cognitect.aws/api "0.8.305"]
+                 [com.cognitect.aws/api "0.8.391"]
                  [com.cognitect.aws/endpoints "1.1.11.549"]
                  [com.cognitect.aws/secretsmanager "707.2.405.0"]
                  [compojure "1.6.1"]

@@ -18,8 +18,58 @@
 (ns
   ^{:author "Christopher R. Reyes"}
   dev.chrisreyes.task-tracker.core-test
-  (:require [clojure.test :refer :all]
-            [dev.chrisreyes.task-tracker.core :refer :all]))
+  (:require
+    [clojure.data.json :as json]
+    [clojure.test :refer :all]
+    [dev.chrisreyes.task-tracker.persistence :as persistence]
+    [dev.chrisreyes.task-tracker.core :refer :all]))
+
+(defn api-get
+  "Executes a get-request against the given Compojure API"
+  ([api]
+   (api-get api "/"))
+  ([api resource]
+   (api-get api resource nil))
+  ([api resource params]
+   (api {:request-method :get
+         :uri resource
+         :params params})))
+
+(deftest backend-api-test
+  (testing "Defines a backend api"
+    (is (some? backend-api) "Core should define the backend API"))
+  (testing "Has a health check"
+    (let [response (api-get backend-api "/.internal/is_healthy")
+          status (:status response)
+          body (:body response)]
+      (is (<= 200 status 299) "Should return a 2XX status")
+      (is (= true (get (json/read-str body) "healthy"))
+          "Should report to be healthy")))
+  (testing "/project route"
+    (let [root-task {:task-id 1
+                     :issue-link "Project root"
+                     :hierarchy-node {:this-numerator 1
+                                      :this-denominator 1
+                                      :hierarchy-id 1}}]
+      (with-redefs [persistence/get-all-roots (fn [config]
+                                                (if (= config "TEST-CONFIG")
+                                                  [root-task]
+                                                  "Did not stub out config!"))
+                    persistence/get-config (fn [secret]
+                                             (if (= secret "TEST-SECRET")
+                                               "TEST-CONFIG"
+                                               "Did not stub out secret!"))
+                    persistence/get-secret-from-aws (fn [secret-name]
+                                                      (if (= secret-name "TEST-SECRET-NAME")
+                                                        "TEST-SECRET"
+                                                        "Did not stub out secret name!"))
+                    persistence/get-credentials-secret (constantly "TEST-SECRET-NAME")]
+        (let [response (api-get backend-api "/project")
+              status (:status response)
+              body (:body response)]
+          (is (<= 200 status 299) "Should return a 2XX status")
+          (is (= body (json/write-str [root-task]))
+              "Should have returned a json string with the response of persistence/get-all-roots"))))))
 
 (deftest main-test
   (testing "Has main function"
