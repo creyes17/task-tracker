@@ -26,14 +26,14 @@
     [dev.chrisreyes.task-tracker.persistence :as persistence]))
 
 
-(defn- db-config
+(defn db-config
   "Gets the default db-config"
   []
   (persistence/get-config
     (persistence/get-secret-from-aws
       (persistence/get-credentials-secret))))
 
-(defn- add-subtasks
+(defn add-subtasks
   "Adds n children tasks to a parent ::task"
   ([root-task]
    (add-subtasks root-task 3))
@@ -54,7 +54,7 @@
            root-task
            (range n))))
 
-(defn- add-nested-subtasks
+(defn add-nested-subtasks
   "Adds n successive subtasks to a ::task such that each subtask is a parent of the next subtask added"
   ([root-task]
    (add-nested-subtasks root-task 3))
@@ -73,7 +73,7 @@
            root-task
            (range n))))
 
-(defn- create-next-root-task
+(defn create-next-root-task
   "Creates and returns a new root-level ::task"
   []
   (let [config (db-config)
@@ -84,7 +84,7 @@
               :estimated-time-minutes 30}]
     (persistence/save-task config task (System/getenv "USER"))))
 
-(defn- create-task-with-subtasks
+(defn create-task-with-subtasks
   "Creates a single ::task with n children"
   ([]
    (create-task-with-subtasks 3))

@@ -1,0 +1,103 @@
+#!/bin/bash
+
+# Enable unofficial "Strict mode"
+set -euo pipefail;
+IFS=$'\n\t';
+
+# Exit Codes
+readonly e_invalid_input=1;
+readonly e_invalid_secret=2;
+
+usage() {
+    cat <<-USAGE
+        Writes postgres secrets to files so we can start our local postgres process.
+        This is not intended to start a production instance of this app.
+        
+        usage: $0 [-h]
+            -h                                  Display this help text and return
+        
+        Relevant Environment Variables
+            C17_TASKTRACKER_POSTGRES_SECRET     The name of the secret in AWS Secrets Manager
+                                                that contains the postgres connection information
+
+        Dependencies
+            aws                                 The AWS CLI (installed via "pip install awscli")
+            jq                                  A JSON parsing library
+            sed                                 Tested using MacOS version of sed
+        
+        Side Effects
+            Writes files containing the database name, username, and password for the postgres instance.
+        
+        Exit Codes
+            $e_invalid_input                                   Invalid input code
+            $e_invalid_secret                                   AWS Secret does not contain all required information
+USAGE
+}
+
+readonly script_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )";
+readonly secrets_dir="$(dirname $script_dir)/resources/secrets";
+
+#=== FUNCTION ================================================================
+# NAME: cleanup
+# DESCRIPTION: Deletes temporary files. Should be called when script exits
+# PARAMETERS: None.
+# ENVIRONMENT VARIABLES: None.
+# DEPENDENCIES: None.
+# SIDE EFFECTS: None.
+# EXIT CODES: None.
+#=============================================================================
+cleanup() {
+    # Nothing to do yet
+    return 0;
+}
+trap cleanup EXIT;
+
+main() {
+    while getopts "h" opt; do
+        case $opt in
+            h)
+                usage;
+                return 0;
+                ;;
+            *)
+                echo "Invalid argument!" >&2
+                usage;
+                return $e_invalid_input;
+        esac;
+    done;
+
+    local raw_secret=$(aws secretsmanager get-secret-value --secret-id $C17_TASKTRACKER_POSTGRES_SECRET);
+    local json_secret=$(echo $raw_secret | jq .SecretString | sed -e "s/\\\\//g" -e 's/^"//' -e 's/"$//');
+
+    local invalid_secret=false;
+
+    local database_name=$(echo $json_secret | jq .dbname);
+    if [[ -z "$database_name" ]]; then
+        echo "Could not load 'dbname' property from AWS secret!" >&2;
+        invalid_secret=true;
+    fi
+
+    local password=$(echo $json_secret | jq .password);
+    if [[ -z "$password" ]]; then
+        echo "Could not load 'password' property from AWS secret!" >&2;
+        invalid_secret=true;
+    fi
+
+    local username=$(echo $json_secret | jq .username);
+    if [[ -z "$username" ]]; then
+        echo "Could not load 'username' property from AWS secret!" >&2;
+        invalid_secret=true;
+    fi
+
+    if $invalid_secret; then
+        return $e_invalid_secret;
+    fi
+
+    echo $database_name > "$secrets_dir/postgres_database_name";
+    echo $password > "$secrets_dir/postgres_password";
+    echo $username > "$secrets_dir/postgres_username";
+
+    return 0;
+}
+
+main "$@";

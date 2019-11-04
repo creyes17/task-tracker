@@ -20,8 +20,8 @@ services:
     postgres:
         environment:
             # TODO: Use a more secure mechanism for managing secrets other than
-            #       environment variables. I believe environment variables can
-            #       unintentionally be leaked between containers.
+            #       environment variables. This should probably just use
+            #       AWS Secrets Manager too
             - "PGDATA=${PGDATA:-/var/lib/postgresql/data}"
             - "PGDATABASE=${POSTGRES_DB:-dev_chrisreyes_tasktracker}"
             - "PGPASSWORD=${C17_TASKTRACKER_POSTGRES_PASSWORD}"
