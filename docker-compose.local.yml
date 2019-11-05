@@ -2,4 +2,5 @@ version: '3.7'
 services:
     task-tracker:
         volumes:
+            # TODO: Figure out a better way to pass AWS credentials to the container
             - $HOME/.aws:/root/.aws:ro
