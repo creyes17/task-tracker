@@ -24,6 +24,7 @@ usage() {
             aws                                 The AWS CLI (installed via "pip install awscli")
             jq                                  A JSON parsing library
             sed                                 Tested using MacOS version of sed
+            touch
         
         Side Effects
             Writes files containing the database name, username, and password for the postgres instance.
@@ -35,7 +36,7 @@ USAGE
 }
 
 readonly script_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )";
-readonly secrets_dir="$(dirname $script_dir)/resources/secrets";
+readonly secrets_dir="$(dirname $script_dir)/target/secrets";
 
 #=== FUNCTION ================================================================
 # NAME: cleanup
@@ -66,24 +67,25 @@ main() {
         esac;
     done;
 
+    # Retrieve and parse our secrets from AWS
     local raw_secret=$(aws secretsmanager get-secret-value --secret-id $C17_TASKTRACKER_POSTGRES_SECRET);
-    local json_secret=$(echo $raw_secret | jq .SecretString | sed -e "s/\\\\//g" -e 's/^"//' -e 's/"$//');
+    local json_secret=$(echo $raw_secret | jq --raw-output .SecretString | sed -e "s/\\\\//g");
 
     local invalid_secret=false;
 
-    local database_name=$(echo $json_secret | jq .dbname);
+    local database_name=$(echo $json_secret | jq --raw-output .dbname);
     if [[ -z "$database_name" ]]; then
         echo "Could not load 'dbname' property from AWS secret!" >&2;
         invalid_secret=true;
     fi
 
-    local password=$(echo $json_secret | jq .password);
+    local password=$(echo $json_secret | jq --raw-output .password);
     if [[ -z "$password" ]]; then
         echo "Could not load 'password' property from AWS secret!" >&2;
         invalid_secret=true;
     fi
 
-    local username=$(echo $json_secret | jq .username);
+    local username=$(echo $json_secret | jq --raw-output .username);
     if [[ -z "$username" ]]; then
         echo "Could not load 'username' property from AWS secret!" >&2;
         invalid_secret=true;
@@ -93,9 +95,24 @@ main() {
         return $e_invalid_secret;
     fi
 
-    echo $database_name > "$secrets_dir/postgres_database_name";
-    echo $password > "$secrets_dir/postgres_password";
-    echo $username > "$secrets_dir/postgres_username";
+    # Write the secrets to our secrets files used in Docker Compose
+    mkdir -p $secrets_dir;
+
+    local database_name_file="$secrets_dir/postgres_database_name";
+    local password_file="$secrets_dir/postgres_password";
+    local username_file="$secrets_dir/postgres_username";
+
+    touch $database_name_file;
+    touch $password_file;
+    touch $username_file;
+
+    chmod 600 $database_name_file;
+    chmod 600 $password_file;
+    chmod 600 $username_file;
+
+    echo $database_name > $database_name_file;
+    echo $password > $password_file;
+    echo $username > $username_file;
 
     return 0;
 }
