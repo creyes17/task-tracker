@@ -38,21 +38,6 @@ USAGE
 readonly script_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )";
 readonly secrets_dir="$(dirname $script_dir)/target/secrets";
 
-#=== FUNCTION ================================================================
-# NAME: cleanup
-# DESCRIPTION: Deletes temporary files. Should be called when script exits
-# PARAMETERS: None.
-# ENVIRONMENT VARIABLES: None.
-# DEPENDENCIES: None.
-# SIDE EFFECTS: None.
-# EXIT CODES: None.
-#=============================================================================
-cleanup() {
-    # Nothing to do yet
-    return 0;
-}
-trap cleanup EXIT;
-
 main() {
     while getopts "h" opt; do
         case $opt in

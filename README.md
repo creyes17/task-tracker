@@ -25,6 +25,10 @@ First make sure you've created the compiled uberjar with `lein uberjar`.
 Then start the default postgres service with `docker-compose up`. You can connect to the running postgres instance with `docker-compose exec postgres psql`.
 
 - Note: make sure to stop any running postgres services via brew with `brew services stop postgres`. Otherwise you won't be able to connect to postgres on the docker image.
+- Also note: this will sign you in as the `root` user on the `root` database. To connect to the correct database, you'll need to change the connection with:
+  ```
+  \c <database-name> <username>
+  ```
 
 This also starts the backend web service running on port equal to your `C17_TASK_TRACKER_BACKEND_PORT` environment variable (default 5000). You can see that the service is healthy with `curl http://localhost:${C17_TASKTRACKER_BACKEND_PORT:-5000}/.internal/is_healthy`.
 

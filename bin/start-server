@@ -32,21 +32,6 @@ USAGE
 readonly script_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )";
 readonly project_dir="$(dirname $script_dir)";
 
-#=== FUNCTION ================================================================
-# NAME: cleanup
-# DESCRIPTION: Deletes temporary files. Should be called when script exits
-# PARAMETERS: None.
-# ENVIRONMENT VARIABLES: None.
-# DEPENDENCIES: None.
-# SIDE EFFECTS: None.
-# EXIT CODES: None.
-#=============================================================================
-cleanup() {
-    # Nothing to do yet
-    return 0;
-}
-trap cleanup EXIT;
-
 main() {
     while getopts "h" opt; do
         case $opt in
@@ -62,6 +47,15 @@ main() {
     done;
 
     echo "Starting local server using the following environment variables:";
+
+    echo -ne "\tC17_TASKTRACKER_POSTGRES_SECRET"
+    if [ -n "${C17_TASKTRACKER_POSTGRES_SECRET:-}" ]; then
+        echo -n " [$C17_TASKTRACKER_POSTGRES_SECRET]";
+    fi
+    echo -n ": ";
+    local secret_name;
+    read secret_name;
+    secret_name=${secret_name:-$C17_TASKTRACKER_POSTGRES_SECRET};
 
     echo -ne "\t(optional) AWS_PROFILE"
     if [ -n "${AWS_PROFILE:-}" ]; then
@@ -80,15 +74,6 @@ main() {
     local backend_port;
     read backend_port;
     backend_port=${backend_port:-${C17_TASKTRACKER_BACKEND_PORT:-}};
-
-    echo -ne "\tC17_TASKTRACKER_POSTGRES_SECRET"
-    if [ -n "${C17_TASKTRACKER_POSTGRES_SECRET:-}" ]; then
-        echo -n " [$C17_TASKTRACKER_POSTGRES_SECRET]";
-    fi
-    echo -n ": ";
-    local secret_name;
-    read secret_name;
-    secret_name=${secret_name:-$C17_TASKTRACKER_POSTGRES_SECRET};
 
     echo -ne "\t(optional) PGDATA"
     if [ -n "${PGDATA:-}" ]; then
