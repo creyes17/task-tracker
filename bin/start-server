@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# Enable unofficial "Strict mode"
+set -euo pipefail;
+IFS=$'\n\t';
+
+# Exit Codes
+readonly e_invalid_input=1;
+
+usage() {
+    cat <<-USAGE
+        Starts the local dev server. Not for use in production.
+        
+        usage: $0 [-h]
+            -h                                  Display this help text and return
+        
+        Relevant Environment Variables
+            C17_TASKTRACKER_POSTGRES_SECRET     The name of the secret in AWS Secrets Manager
+                                                that contains the postgres connection information
+
+        Dependencies
+            init-postgres-container             A script to initialize the docker postgres container.
+        
+        Side Effects
+            Starts 'docker-compose up' with the given values.
+        
+        Exit Codes
+            $e_invalid_input                                   Invalid input code
+USAGE
+}
+
+readonly script_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )";
+readonly project_dir="$(dirname $script_dir)";
+
+#=== FUNCTION ================================================================
+# NAME: cleanup
+# DESCRIPTION: Deletes temporary files. Should be called when script exits
+# PARAMETERS: None.
+# ENVIRONMENT VARIABLES: None.
+# DEPENDENCIES: None.
+# SIDE EFFECTS: None.
+# EXIT CODES: None.
+#=============================================================================
+cleanup() {
+    # Nothing to do yet
+    return 0;
+}
+trap cleanup EXIT;
+
+main() {
+    while getopts "h" opt; do
+        case $opt in
+            h)
+                usage;
+                return 0;
+                ;;
+            *)
+                echo "Invalid argument!" >&2
+                usage;
+                return $e_invalid_input;
+        esac;
+    done;
+
+    echo "Starting local server using the following environment variables:";
+
+    echo -ne "\t(optional) AWS_PROFILE"
+    if [ -n "${AWS_PROFILE:-}" ]; then
+        echo -n " [$AWS_PROFILE]";
+    fi
+    echo -n ": ";
+    local aws_profile;
+    read aws_profile;
+    aws_profile=${aws_profile:-${AWS_PROFILE:-}};
+
+    echo -ne "\t(optional) C17_TASKTRACKER_BACKEND_PORT"
+    if [ -n "${C17_TASKTRACKER_BACKEND_PORT:-}" ]; then
+        echo -n " [$C17_TASKTRACKER_BACKEND_PORT]";
+    fi
+    echo -n ": ";
+    local backend_port;
+    read backend_port;
+    backend_port=${backend_port:-${C17_TASKTRACKER_BACKEND_PORT:-}};
+
+    echo -ne "\tC17_TASKTRACKER_POSTGRES_SECRET"
+    if [ -n "${C17_TASKTRACKER_POSTGRES_SECRET:-}" ]; then
+        echo -n " [$C17_TASKTRACKER_POSTGRES_SECRET]";
+    fi
+    echo -n ": ";
+    local secret_name;
+    read secret_name;
+    secret_name=${secret_name:-$C17_TASKTRACKER_POSTGRES_SECRET};
+
+    echo -ne "\t(optional) PGDATA"
+    if [ -n "${PGDATA:-}" ]; then
+        echo -n " [$PGDATA]";
+    fi
+    echo -n ": ";
+    local pgdata;
+    read pgdata;
+    pgdata=${pgdata:-${PGDATA:-}};
+
+    # Run all of this in a subshell so we can manipulate the environment variables
+    (
+        # Prepare our postgres container for launch
+        $script_dir/init-postgres-container;
+
+        export AWS_PROFILE=$aws_profile;
+        export C17_TASKTRACKER_BACKEND_PORT=$backend_port;
+        export C17_TASKTRACKER_POSTGRES_SECRET=$secret_name;
+        export PGDATA=$pgdata;
+
+        # Start the actual server
+        docker-compose -f $project_dir/docker-compose.yml -f $project_dir/docker-compose.local.yml up;
+    );
+
+    return 0;
+}
+
+main "$@";
