@@ -27,19 +27,35 @@
     [clojure.data.json :as json]
     [compojure.core]
     [dev.chrisreyes.task-tracker.persistence :as persistence]
-    [org.httpkit.server :refer [run-server]]))
+    [org.httpkit.server :refer [run-server]]
+    [semver.core]))
 
 (compojure.core/defroutes backend-api
   (compojure.core/GET "/.internal/is_healthy"
                       []
                       (json/write-str {:healthy true}))
-  (compojure.core/GET "/project"
-                      []
-                      (json/write-str
-                        (persistence/get-all-roots
-                          (persistence/get-config
-                            (persistence/get-secret-from-aws
-                              (persistence/get-credentials-secret)))))))
+  (compojure.core/GET "/:version/project"
+                      [version]
+                      (if (= \v (first version))
+                        (if (semver.core/equal? (subs version 1) "1.0.0")
+                          (json/write-str
+                            (persistence/get-all-roots
+                              (persistence/get-config
+                                (persistence/get-secret-from-aws
+                                  (persistence/get-credentials-secret)))))
+                          (if (semver.core/newer? (subs version 1) "1.0.0")
+                            ; Requested version is newer than our latest version
+                            {:status 404
+                             :headers {}
+                             :body {:message "Latest version is v1.0.0"}}
+                            ; Requested version is older than our first published version
+                            {:status 404
+                             :headers {}
+                             :body {:message "NOT FOUND"}}))
+                        ; Version is invalid
+                        {:status 404
+                         :headers {}
+                         :body {:message "NOT FOUND"}})))
 
 (defn -main
   "Starts a backend webserver on port 5000 to handle API requests for working with tasks"

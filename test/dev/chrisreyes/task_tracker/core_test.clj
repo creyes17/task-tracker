@@ -44,32 +44,46 @@
           body (:body response)]
       (is (<= 200 status 299) "Should return a 2XX status")
       (is (= true (get (json/read-str body) "healthy"))
-          "Should report to be healthy")))
-  (testing "/project route"
-    (let [root-task {:task-id 1
-                     :issue-link "Project root"
-                     :hierarchy-node {:this-numerator 1
-                                      :this-denominator 1
-                                      :hierarchy-id 1}}]
-      (with-redefs [persistence/get-all-roots (fn [config]
-                                                (if (= config "TEST-CONFIG")
-                                                  [root-task]
-                                                  "Did not stub out config!"))
-                    persistence/get-config (fn [secret]
-                                             (if (= secret "TEST-SECRET")
-                                               "TEST-CONFIG"
-                                               "Did not stub out secret!"))
-                    persistence/get-secret-from-aws (fn [secret-name]
-                                                      (if (= secret-name "TEST-SECRET-NAME")
-                                                        "TEST-SECRET"
-                                                        "Did not stub out secret name!"))
-                    persistence/get-credentials-secret (constantly "TEST-SECRET-NAME")]
-        (let [response (api-get backend-api "/project")
+          "Should report to be healthy"))))
+
+(deftest project-endpoint
+  (let [root-task {:task-id 1
+                   :issue-link "Project root"
+                   :hierarchy-node {:this-numerator 1
+                                    :this-denominator 1
+                                    :hierarchy-id 1}}]
+    (with-redefs [persistence/get-all-roots (fn [config]
+                                              (if (= config "TEST-CONFIG")
+                                                [root-task]
+                                                "Did not stub out config!"))
+                  persistence/get-config (fn [secret]
+                                           (if (= secret "TEST-SECRET")
+                                             "TEST-CONFIG"
+                                             "Did not stub out secret!"))
+                  persistence/get-secret-from-aws (fn [secret-name]
+                                                    (if (= secret-name "TEST-SECRET-NAME")
+                                                      "TEST-SECRET"
+                                                      "Did not stub out secret name!"))
+                  persistence/get-credentials-secret (constantly "TEST-SECRET-NAME")]
+      (testing "/project route"
+        (let [response (api-get backend-api "/v1.0.0/project")
               status (:status response)
               body (:body response)]
           (is (<= 200 status 299) "Should return a 2XX status")
           (is (= body (json/write-str [root-task]))
-              "Should have returned a json string with the response of persistence/get-all-roots"))))))
+              "Should have returned a json string with the response of persistence/get-all-roots")))
+      (testing "versioning"
+        (let [response (api-get backend-api "/v1.0.0/project")
+              status (:status response)]
+          (is (<= 200 status 299) "Should return a 2XX status for version 1.0.0"))
+        (let [response (api-get backend-api "/v0.9.9/project")
+              status (:status response)]
+          (is (= status 404)
+              "Should return a 404 status for versions before 1.0.0"))
+        (let [response (api-get backend-api "/v1.0.1/project")
+              status (:status response)]
+          (is (= status 404)
+              "Should return a 404 status for versions after 1.0.0"))))))
 
 (deftest main-test
   (testing "Has main function"
