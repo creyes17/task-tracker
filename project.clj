@@ -22,13 +22,15 @@
             :url "none"
             :year 2019
             :key "gpl-3.0"}
-  :dependencies [[org.clojure/clojure "1.10.0"]
+  :dependencies [
                  [cheshire "5.8.1"]
                  [com.cognitect.aws/api "0.8.391"]
                  [com.cognitect.aws/endpoints "1.1.11.549"]
                  [com.cognitect.aws/secretsmanager "707.2.405.0"]
                  [compojure "1.6.1"]
                  [http-kit "2.3.0"]
+                 [io.forward/semver "0.1.0"]
+                 [org.clojure/clojure "1.10.0"]
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/java.jdbc "0.7.9"]
                  [org.clojure/test.check "0.9.0"]
