@@ -30,32 +30,82 @@
     [org.httpkit.server :refer [run-server]]
     [semver.core]))
 
+(defn- find-closest-version
+  "Finds the closest valid-version to version without going past.
+   Assumes valid-versions is sorted from newest to oldest."
+  [valid-versions version]
+  (loop [new-index 0
+         old-index (dec (count valid-versions))]
+    (if (> new-index old-index)
+      (if (>= (inc old-index) (count valid-versions))
+        nil
+        (nth valid-versions (inc old-index)))
+      (let [mid-index (quot (+ new-index old-index) 2)
+            mid-version (nth valid-versions mid-index)]
+        (cond (semver.core/equal? version mid-version) mid-version
+
+              (semver.core/older? version mid-version) (recur
+                                                         (inc mid-index)
+                                                         old-index)
+
+              (semver.core/newer? version mid-version) (recur
+                                                         new-index
+                                                         (dec mid-index)))))))
+
+(defn- versioned-route
+  "Prefixes a route with a version and distributes to the correct
+   implementation based on version number"
+  [versions]
+  (fn [version & args]
+    (if (= \v (first version))
+      (let [semantic-version (subs version 1)
+            valid-versions (semver.core/sorted (keys versions))
+            newest-version (first valid-versions)
+            oldest-version (last valid-versions)]
+        (cond (contains? versions semantic-version)
+              (apply (get versions semantic-version) version args)
+
+              (semver.core/newer? semantic-version newest-version)
+              {:status 404
+               :headers {}
+               :body {:message (str "Latest version is v" newest-version)}}
+
+              (semver.core/older? semantic-version oldest-version)
+              {:status 404
+               :headers {}
+               :body {:message "NOT FOUND"}}
+
+              ; At this point, the version is in range.
+              ; Figure out which is the newest version that
+              ; is still less than the semantic-version.
+              :else (apply (get versions
+                                (find-closest-version valid-versions semantic-version))
+                           version
+                           args)))
+      {:status 404
+       :headers {}
+       :body {:message "NOT FOUND"}})))
+
+(defn- get-all-projects-v-1-0-0
+  "Implementation V1.0.0 of the /project endpoint"
+  ([version]
+   (get-all-projects-v-1-0-0))
+  ([]
+   (json/write-str
+     (persistence/get-all-roots
+       (persistence/get-config
+         (persistence/get-secret-from-aws
+           (persistence/get-credentials-secret)))))))
+
+
 (compojure.core/defroutes backend-api
   (compojure.core/GET "/.internal/is_healthy"
                       []
                       (json/write-str {:healthy true}))
+  ; TODO: Something that wraps compojure.core/GET so we don't need this weird syntax
   (compojure.core/GET "/:version/project"
                       [version]
-                      (if (= \v (first version))
-                        (if (semver.core/equal? (subs version 1) "1.0.0")
-                          (json/write-str
-                            (persistence/get-all-roots
-                              (persistence/get-config
-                                (persistence/get-secret-from-aws
-                                  (persistence/get-credentials-secret)))))
-                          (if (semver.core/newer? (subs version 1) "1.0.0")
-                            ; Requested version is newer than our latest version
-                            {:status 404
-                             :headers {}
-                             :body {:message "Latest version is v1.0.0"}}
-                            ; Requested version is older than our first published version
-                            {:status 404
-                             :headers {}
-                             :body {:message "NOT FOUND"}}))
-                        ; Version is invalid
-                        {:status 404
-                         :headers {}
-                         :body {:message "NOT FOUND"}})))
+                      ((versioned-route {"1.0.0" get-all-projects-v-1-0-0}) version)))
 
 (defn -main
   "Starts a backend webserver on port 5000 to handle API requests for working with tasks"
