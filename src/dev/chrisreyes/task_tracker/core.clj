@@ -55,57 +55,58 @@
 (defn- versioned-route
   "Prefixes a route with a version and distributes to the correct
    implementation based on version number"
-  [versions]
-  (fn [version & args]
-    (if (= \v (first version))
-      (let [semantic-version (subs version 1)
-            valid-versions (semver.core/sorted (keys versions))
-            newest-version (first valid-versions)
-            oldest-version (last valid-versions)]
-        (cond (contains? versions semantic-version)
-              (apply (get versions semantic-version) version args)
+  [method path versions]
+  (compojure.core/make-route
+    method
+    (str "/:version" path)
+    (fn [request]
+      (let [version (get (:params request) :version)]
+        (if (= \v (first version))
+          (let [semantic-version (subs version 1)
+                valid-versions (semver.core/sorted (keys versions))
+                newest-version (first valid-versions)
+                oldest-version (last valid-versions)]
+            (cond (contains? versions semantic-version)
+                  ((get versions semantic-version) request)
 
-              (semver.core/newer? semantic-version newest-version)
-              {:status 404
-               :headers {}
-               :body {:message (str "Latest version is v" newest-version)}}
+                  (semver.core/newer? semantic-version newest-version)
+                  {:status 404
+                   :headers {}
+                   :body {:message (str "Latest version is v"
+                                        newest-version)}}
 
-              (semver.core/older? semantic-version oldest-version)
-              {:status 404
-               :headers {}
-               :body {:message "NOT FOUND"}}
+                  (semver.core/older? semantic-version oldest-version)
+                  {:status 404
+                   :headers {}
+                   :body {:message "NOT FOUND"}}
 
-              ; At this point, the version is in range.
-              ; Figure out which is the newest version that
-              ; is still less than the semantic-version.
-              :else (apply (get versions
-                                (find-closest-version valid-versions semantic-version))
-                           version
-                           args)))
-      {:status 404
-       :headers {}
-       :body {:message "NOT FOUND"}})))
+                  ; At this point, the version is in range.
+                  ; Figure out which is the newest version that
+                  ; is still less than the semantic-version.
+                  :else ((get versions
+                              (find-closest-version valid-versions
+                                                    semantic-version))
+                         request)))
+          {:status 404
+           :headers {}
+           :body {:message "NOT FOUND"}})))))
 
 (defn- get-all-projects-v-1-0-0
   "Implementation V1.0.0 of the /project endpoint"
-  ([version]
-   (get-all-projects-v-1-0-0))
-  ([]
-   (json/write-str
-     (persistence/get-all-roots
-       (persistence/get-config
-         (persistence/get-secret-from-aws
-           (persistence/get-credentials-secret)))))))
-
+  [request]
+  (json/write-str
+    (persistence/get-all-roots
+      (persistence/get-config
+        (persistence/get-secret-from-aws
+          (persistence/get-credentials-secret))))))
 
 (compojure.core/defroutes backend-api
   (compojure.core/GET "/.internal/is_healthy"
                       []
                       (json/write-str {:healthy true}))
-  ; TODO: Something that wraps compojure.core/GET so we don't need this weird syntax
-  (compojure.core/GET "/:version/project"
-                      [version]
-                      ((versioned-route {"1.0.0" get-all-projects-v-1-0-0}) version)))
+  (versioned-route :get
+                   "/project"
+                   {"1.0.0" get-all-projects-v-1-0-0}))
 
 (defn -main
   "Starts a backend webserver on port 5000 to handle API requests for working with tasks"
