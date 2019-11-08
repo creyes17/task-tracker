@@ -80,10 +80,11 @@
               status (:status response)]
           (is (= status 404)
               "Should return a 404 status for versions before 1.0.0"))
-        (let [response (api-get backend-api "/v1.0.1/project")
+        (let [response (api-get backend-api "/v9000.0.1/project")
               status (:status response)]
           (is (= status 404)
-              "Should return a 404 status for versions after 1.0.0"))))))
+              ; Note: This test will spuriously fail after the release of version 9000.0.1 (if that ever happens).
+              "Should return a 404 status for future versions."))))))
 
 (deftest main-test
   (testing "Has main function"
