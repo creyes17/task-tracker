@@ -26,6 +26,7 @@
   (:require
     [clojure.data.json :as json]
     [compojure.core]
+    [compojure.route]
     [dev.chrisreyes.task-tracker.persistence :as persistence]
     [org.httpkit.server :refer [run-server]]
     [semver.core]))
@@ -52,6 +53,22 @@
                                                          new-index
                                                          (dec mid-index)))))))
 
+(defn user-error-response
+  "Generates a 400 response indicating that the request is invalid."
+  [reason]
+  {:status 400
+   :headers {}
+   :body {:message reason}})
+
+(defn not-found-response
+  "Generates a 404 response indicating the endpoint doesn't exist"
+  ([]
+   (not-found-response "NOT FOUND"))
+  ([message]
+   {:status 404
+    :headers {}
+    :body (json/write-str {:message message})}))
+
 (defn- versioned-route
   "Prefixes a route with a version and distributes to the correct
    implementation based on version number"
@@ -70,15 +87,11 @@
                   ((get versions semantic-version) request)
 
                   (semver.core/newer? semantic-version newest-version)
-                  {:status 404
-                   :headers {}
-                   :body {:message (str "Latest version is v"
-                                        newest-version)}}
+                  (not-found-response (str "Latest version is v"
+                                           newest-version))
 
                   (semver.core/older? semantic-version oldest-version)
-                  {:status 404
-                   :headers {}
-                   :body {:message "NOT FOUND"}}
+                  (not-found-response)
 
                   ; At this point, the version is in range.
                   ; Figure out which is the newest version that
@@ -87,9 +100,7 @@
                               (find-closest-version valid-versions
                                                     semantic-version))
                          request)))
-          {:status 404
-           :headers {}
-           :body {:message "NOT FOUND"}})))))
+          (not-found-response))))))
 
 (defn- get-all-projects-v-1-0-0
   "Implementation V1.0.0 of the /project endpoint"
@@ -100,13 +111,40 @@
         (persistence/get-secret-from-aws
           (persistence/get-credentials-secret))))))
 
+(defn- validate-object-id
+  "Validates and normalizes a string request parameter representing an
+   object ID (like a task ID or hierarchy ID). If the request is valid,
+   returns the ID as a number"
+  [requested-id]
+  (let [parsedId (try (Long/parseLong requested-id)
+                      (catch java.lang.NumberFormatException e nil))]
+    (cond (nil? parsedId) nil
+          (>= parsedId 0) parsedId
+          :else nil)))
+
+(defn- get-project-id-v-1-0-0
+  "Implementation V1.0.0 of the /project/:id endpoint"
+  [request]
+  (let [raw-task-id (get (:params request) :id)
+        validated-task-id (validate-object-id raw-task-id)]
+    (if (some? validated-task-id)
+      (let [config (persistence/get-config
+                     (persistence/get-secret-from-aws
+                       (persistence/get-credentials-secret)))]
+        (json/write-str (persistence/load-task-by-id config validated-task-id)))
+      (user-error-response (str "Invalid Task ID [" raw-task-id "].")))))
+
 (compojure.core/defroutes backend-api
   (compojure.core/GET "/.internal/is_healthy"
                       []
                       (json/write-str {:healthy true}))
   (versioned-route :get
                    "/project"
-                   {"1.0.0" get-all-projects-v-1-0-0}))
+                   {"1.0.0" get-all-projects-v-1-0-0})
+  (versioned-route :get
+                   "/project/:id"
+                   {"1.0.0" get-project-id-v-1-0-0})
+  (compojure.route/not-found (not-found-response)))
 
 (defn -main
   "Starts a backend webserver on port 5000 to handle API requests for working with tasks"
