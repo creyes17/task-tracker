@@ -116,9 +116,7 @@
           (is (= body (json/write-str specific-task))
               "Should have returned a json string with the response of persistence/load-task-by-id")))
       (testing "input validation"
-        (let [status-for-input #(:status (api-get backend-api
-                                                     (str "/v1.0.0/project/"
-                                                          %)))]
+        (let [status-for-input #(:status (api-get backend-api (str "/v1.0.0/project/" %)))]
           (is (= 400 (status-for-input "alpha"))
               "Should return a 400 response for alphabetical task IDs")
           (is (= 400 (status-for-input "1%3B%20drop%20table%20task%3B"))
@@ -131,7 +129,7 @@
           (is (<= 200
                   (status-for-input "9223372036854775806")
                   299)
-              "Should return a 2XX response even when using an ID less
+              "Should return a 2XX response when using an ID less
                than the max value for the bigint type in postgres")
           (is (<= 200
                   (status-for-input "9223372036854775807")
@@ -139,7 +137,7 @@
               "Should return a 2XX response even when using an ID equal
                to the max value for the bigint type in postgres")
           (is (= 400 (status-for-input "9223372036854775808"))
-              "Should return a 400 response even when using an ID greater
+              "Should return a 400 response when using an ID greater
                than the max value for the bigint type in postgres")
           (is (= 400 (status-for-input "-3"))
               "Should return a 400 response for negative task IDs")))

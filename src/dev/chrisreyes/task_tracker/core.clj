@@ -58,7 +58,7 @@
   [reason]
   {:status 400
    :headers {}
-   :body {:message reason}})
+   :body (json/write-str {:message reason})})
 
 (defn not-found-response
   "Generates a 404 response indicating the endpoint doesn't exist"

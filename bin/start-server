@@ -21,6 +21,7 @@ usage() {
                                                 that contains the postgres connection information.
 
         Dependencies
+            docker-compose
             init-postgres-container             A script to initialize the docker postgres container.
             lein                                The executable for the leiningen build tool.
         
