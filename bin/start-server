@@ -6,31 +6,58 @@ IFS=$'\n\t';
 
 # Exit Codes
 readonly e_invalid_input=1;
+readonly e_no_tmp_dir=2;
+readonly e_no_cleanup=3;
 
 usage() {
     cat <<-USAGE
         Starts the local dev server. Not for use in production.
         
         usage: $0 [-h]
-            -h                                  Display this help text and return
+            -h                                  Display this help text and return.
         
         Relevant Environment Variables
             C17_TASKTRACKER_POSTGRES_SECRET     The name of the secret in AWS Secrets Manager
-                                                that contains the postgres connection information
+                                                that contains the postgres connection information.
 
         Dependencies
             init-postgres-container             A script to initialize the docker postgres container.
+            lein                                The executable for the leiningen build tool.
         
         Side Effects
             Starts 'docker-compose up' with the given values.
         
         Exit Codes
-            $e_invalid_input                                   Invalid input code
+            $e_invalid_input                                   Invalid input code.
+            $e_no_tmp_dir                                   Unable to create temporary directory for data backups.
+            $e_no_cleanup                                   Unable to clean up temporary directory.
 USAGE
 }
 
 readonly script_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )";
 readonly project_dir="$(dirname $script_dir)";
+readonly tmp_dir=$(mktemp -d -t "$(basename $0)-$$-backup-data-directory.XXXXXXXX") || exit $e_no_tmp_dir;
+
+#=== FUNCTION ================================================================
+# NAME: cleanup
+# DESCRIPTION: Deletes temporary files. Should be called when script exits
+# PARAMETERS: None.
+# ENVIRONMENT VARIABLES: None.
+# DEPENDENCIES: None.
+# SIDE EFFECTS: None.
+# EXIT CODES: None.
+#=============================================================================
+cleanup() {
+    local status_code=0;
+    if [[ "$tmp_dir" != "/" ]]; then
+        rm -r $tmp_dir || status_code=$e_no_cleanup ;
+        if [[ $status_code -ne 0 ]]; then
+            echo "Unable to remove temp directory [$tmp_dir]" >&2;
+        fi
+    fi
+	return $status_code;
+}
+trap cleanup EXIT;
 
 main() {
     while getopts "h" opt; do
@@ -83,6 +110,44 @@ main() {
     local pgdata;
     read pgdata;
     pgdata=${pgdata:-${PGDATA:-}};
+
+    echo "Would you like to rebuild before deploying?";
+    echo -ne "\ty/n [n]: ";
+    local rebuild=;
+    read rebuild;
+
+    if [[ "$rebuild" == "y" ]]; then
+        echo -e "\tOkay, let's rebuild.";
+
+        local preserve_data=;
+        # Check if existing data exists
+        if [ -d $project_dir/target/data ] && [ "$(ls -a $project_dir/target/data)" ]; then
+            echo -e "\tDo you want to preserve the existing postgres data?";
+            echo -ne "\t\ty/n [y]: ";
+            read preserve_data;
+
+            if [[ "$preserve_data" != "n" ]]; then
+                echo -e "\t\tPreserving data";
+                cp -r $project_dir/target/data $tmp_dir/data;
+            fi
+
+            echo -e "\tStarting to rebuild";  # TODO
+        else
+            # There's no data to preserve
+            preserve_data="n";
+        fi
+
+        (
+            cd $project_dir;
+            lein uberjar;
+
+            docker-compose build;
+        )
+
+        if [[ "$preserve_data" != "n" ]]; then
+            cp -r $tmp_dir/data $project_dir/target/data;
+        fi
+    fi
 
     # Run all of this in a subshell so we can manipulate the environment variables
     (
