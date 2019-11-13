@@ -102,14 +102,20 @@
                          request)))
           (not-found-response))))))
 
-(defn- get-all-projects-v-1-0-0
-  "Implementation V1.0.0 of the /project endpoint"
-  [request]
-  (json/write-str
-    (persistence/get-all-roots
-      (persistence/get-config
-        (persistence/get-secret-from-aws
-          (persistence/get-credentials-secret))))))
+(defn- ignore-trailing-slash
+  "Modifies the request uri before calling the handler.
+   Removes a single trailing slash from the end of the uri if present.
+
+   Useful for handling optional trailing slashes until Compojure's route matching syntax supports regex.
+   Adapted from https://gist.github.com/dannypurcell/8215411 which was adapted from
+   http://stackoverflow.com/questions/8380468/compojure-regex-for-matching-a-trailing-slash"
+  [handler]
+  (fn [request]
+    (let [uri (:uri request)]
+      (handler (assoc request :uri (if (and (not (= "/" uri))
+                                            (.endsWith uri "/"))
+                                     (subs uri 0 (dec (count uri)))
+                                     uri))))))
 
 (defn- validate-object-id
   "Validates and normalizes a string request parameter representing an
@@ -121,6 +127,15 @@
     (cond (nil? parsedId) nil
           (>= parsedId 0) parsedId
           :else nil)))
+
+(defn- get-all-projects-v-1-0-0
+  "Implementation V1.0.0 of the /project endpoint"
+  [request]
+  (json/write-str
+    (persistence/get-all-roots
+      (persistence/get-config
+        (persistence/get-secret-from-aws
+          (persistence/get-credentials-secret))))))
 
 (defn- get-project-id-v-1-0-0
   "Implementation V1.0.0 of the /project/:id endpoint"
@@ -138,12 +153,12 @@
   (compojure.core/GET "/.internal/is_healthy"
                       []
                       (json/write-str {:healthy true}))
-  (versioned-route :get
-                   "/project"
-                   {"1.0.0" get-all-projects-v-1-0-0})
-  (versioned-route :get
-                   "/project/:id"
-                   {"1.0.0" get-project-id-v-1-0-0})
+  (ignore-trailing-slash (versioned-route :get
+                                          "/project"
+                                          {"1.0.0" get-all-projects-v-1-0-0}))
+  (ignore-trailing-slash (versioned-route :get
+                                          "/project/:id"
+                                          {"1.0.0" get-project-id-v-1-0-0}))
   (compojure.route/not-found (not-found-response)))
 
 (defn -main
