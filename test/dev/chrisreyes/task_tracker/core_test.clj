@@ -69,7 +69,14 @@
         (let [response (api-get backend-api "/v1.0.0/project")
               status (:status response)
               body (:body response)]
-          (is (<= 200 status 299) "Should return a 2XX status")
+          (is (<= 200 status 299) "Should return a 2XX status without trailing slash")
+          (is (= body (json/write-str [root-task]))
+              "Should have returned a json string with the response of persistence/get-all-roots")))
+      (testing "trailing slash should work"
+        (let [response (api-get backend-api "/v1.0.0/project/")
+              status (:status response)
+              body (:body response)]
+          (is (<= 200 status 299) "Should return a 2XX status with trailing slash")
           (is (= body (json/write-str [root-task]))
               "Should have returned a json string with the response of persistence/get-all-roots")))
       (testing "versioning"
@@ -112,7 +119,14 @@
         (let [response (api-get backend-api (str "/v1.0.0/project/" specific-task-id))
               status (:status response)
               body (:body response)]
-          (is (<= 200 status 299) "Should return a 2XX status")
+          (is (<= 200 status 299) "Should return a 2XX status without a trailing slash")
+          (is (= body (json/write-str specific-task))
+              "Should have returned a json string with the response of persistence/load-task-by-id")))
+      (testing "route should work with trailing slash"
+        (let [response (api-get backend-api (str "/v1.0.0/project/" specific-task-id "/"))
+              status (:status response)
+              body (:body response)]
+          (is (<= 200 status 299) "Should return a 2XX status with a trailing slash")
           (is (= body (json/write-str specific-task))
               "Should have returned a json string with the response of persistence/load-task-by-id")))
       (testing "input validation"
