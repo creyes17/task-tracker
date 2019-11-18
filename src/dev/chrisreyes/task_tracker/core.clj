@@ -25,6 +25,7 @@
   (:gen-class)
   (:require
     [clojure.data.json :as json]
+    [clojure.pprint]
     [compojure.core]
     [compojure.route]
     [dev.chrisreyes.task-tracker.persistence :as persistence]
@@ -129,7 +130,7 @@
           :else nil)))
 
 (defn- get-all-projects-v-1-0-0
-  "Implementation V1.0.0 of the /project endpoint"
+  "Implementation V1.0.0 of the GET /project endpoint"
   [request]
   (json/write-str
     (persistence/get-all-roots
@@ -138,7 +139,7 @@
           (persistence/get-credentials-secret))))))
 
 (defn- get-project-id-v-1-0-0
-  "Implementation V1.0.0 of the /project/:id endpoint"
+  "Implementation V1.0.0 of the GET /project/:id endpoint"
   [request]
   (let [raw-task-id (get (:params request) :id)
         validated-task-id (validate-object-id raw-task-id)]
@@ -147,6 +148,20 @@
                      (persistence/get-secret-from-aws
                        (persistence/get-credentials-secret)))]
         (json/write-str (persistence/load-task-by-id config validated-task-id)))
+      (user-error-response (str "Invalid Task ID [" raw-task-id "].")))))
+
+(defn- post-project-id-endpoint
+  "Implementation V1.0.0 of the POST /project/:id endpoint"
+  [request]
+  (let [raw-task-id (get (:params request) :id)
+        validated-task-id (validate-object-id raw-task-id)
+        raw-task (get (:params request) :task)
+        raw-username (get (:params request) :username)]
+    (if (some? validated-task-id)
+      (let [config (persistence/get-config
+                     (persistence/get-secret-from-aws
+                       (persistence/get-credentials-secret)))]
+        (json/write-str (persistence/save-task config raw-task raw-username)))
       (user-error-response (str "Invalid Task ID [" raw-task-id "].")))))
 
 (compojure.core/defroutes backend-api
@@ -159,6 +174,9 @@
   (ignore-trailing-slash (versioned-route :get
                                           "/project/:id"
                                           {"1.0.0" get-project-id-v-1-0-0}))
+  (ignore-trailing-slash (versioned-route :post
+                                          "/project/:id"
+                                          {"1.0.0" post-project-id-endpoint}))
   (compojure.route/not-found (not-found-response)))
 
 (defn -main
