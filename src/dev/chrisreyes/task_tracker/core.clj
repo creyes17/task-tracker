@@ -179,6 +179,12 @@
                                           {"1.0.0" post-project-id-endpoint}))
   (compojure.route/not-found (not-found-response)))
 
+(defn validate-task
+  "Verifies whether a task supplied by a user is valid or not."
+  [task]
+  (and (validate-object-id (:task-id task))
+       task))
+
 (defn -main
   "Starts a backend webserver on port 5000 to handle API requests for working with tasks"
   [& args]

@@ -68,7 +68,7 @@
                                                       "TEST-SECRET"
                                                       "Did not stub out secret name!"))
                   persistence/get-credentials-secret (constantly "TEST-SECRET-NAME")]
-      (testing "/project route"
+      (testing "GET /project route"
         (let [response (api-call backend-api "/v1.0.0/project")
               status (:status response)
               body (:body response)]
@@ -118,7 +118,7 @@
                                                       "TEST-SECRET"
                                                       "Did not stub out secret name!"))
                   persistence/get-credentials-secret (constantly "TEST-SECRET-NAME")]
-      (testing "/project/:id route"
+      (testing "GET /project/:id route"
         (let [response (api-call backend-api (str "/v1.0.0/project/" specific-task-id))
               status (:status response)
               body (:body response)]
@@ -183,40 +183,86 @@
                                                       "TEST-SECRET"
                                                       "Did not stub out secret name!"))
                   persistence/get-credentials-secret (constantly "TEST-SECRET-NAME")]
-      (let [username "dev.chrisreyes.task-tracker.core-test.test-user"
-            specific-task-id 17
-            specific-task {:task-id specific-task-id
-                           :issue-link "Updated task"
-                           :hierarchy-node {:this-numerator 3
-                                            :this-denominator 5
-                                            :hierarchy-id 8}
-                           :estimated-time-minutes 45
-                           :actual-time-minutes 30}
-            response (api-call backend-api
-                               (str "/v1.0.0/project/" specific-task-id)
-                               :post
-                               {:task specific-task
-                                :username username})
-            body (json/read-str (:body response)
-                                :key-fn keyword)]
+      (testing "POST /project/:id route"
+        (let [username "dev.chrisreyes.task-tracker.core-test.test-user"
+              specific-task-id 17
+              specific-task {:task-id specific-task-id
+                             :issue-link "Updated task"
+                             :hierarchy-node {:this-numerator 3
+                                              :this-denominator 5
+                                              :hierarchy-id 8}
+                             :estimated-time-minutes 45
+                             :actual-time-minutes 30}
+              response (api-call backend-api
+                                 (str "/v1.0.0/project/" specific-task-id)
+                                 :post
+                                 {:task specific-task
+                                  :username username})
+              body (json/read-str (:body response)
+                                  :key-fn keyword)]
+          (is (<= 200 (:status response) 299)
+              "Should have returned the saved task")
+          (is (= (get body :_test-user) username)
+              (str "Should have passed username through to the database. "
+                   "Expected result to have _test-user and for the value "
+                   "to be " username " like we supplied. Instead got:\n"
+                   body))
+          (is (= (get body :_test-key) test-key)
+              (str "Should have called persistence/save-task to save "
+                   "to the database. Expected result to have _test-key "
+                   "and for the value to be " test-key ". Instead got:\n"
+                   body))
+          (is (= (dissoc body :_test-key :_test-user) specific-task)
+              (str "Should have saved the whole task to the database.\n"
+                   "Expected " specific-task ".\nInstead got: "
+                   (dissoc body :_test-key :_test-user)))))
+      (testing "input validation"
         ; TODO: Validate fields. (What's required, what's not? Avoid SQL injection)
+        ; TODO: Figure out how to check that another function was called
         ; (Assume the application already has the hierarchy data)
-        (is (<= 200 (:status response) 299)
-            "Should have returned the saved task")
-        (is (= (get body :_test-user) username)
-            (str "Should have passed username through to the database. "
-                 "Expected result to have _test-user and for the value "
-                 "to be " username " like we supplied. Instead got:\n"
-                 body))
-        (is (= (get body :_test-key) test-key)
-            (str "Should have called persistence/save-task to save "
-                 "to the database. Expected result to have _test-key "
-                 "and for the value to be " test-key ". Instead got:\n"
-                 body))
-        (is (= (dissoc body :_test-key :_test-user) specific-task)
-            (str "Should have saved the whole task to the database.\n"
-                 "Expected " specific-task ".\nInstead got: "
-                 (dissoc body :_test-key :_test-user)))))))
+        (is (= 1 1))))))
+
+(deftest validate-task-test
+  (testing "Prevents invalid IDs"
+    (let [valide-hierarchy-node {:hierarchy-id 25
+                                 :next-denominator 1
+                                 :next-numerator 7
+                                 :num-children 4
+                                 :this-denominator 1
+                                 :this-numerator 6}
+          valid-task {:task-id "22"
+                      :issue-link "Some issue"
+                      :hierarchy-node valide-hierarchy-node
+                      :estimated-time-minutes 99
+                      :actual-time-minutes 100}
+          valid-after-modification? (fn [property value]
+                                      (let [updated-task (assoc valid-task
+                                                                property value)]
+                                        (= updated-task (validate-task updated-task))))
+          invalid-after-modification? (fn [property value]
+                                        (= nil
+                                           (validate-task (assoc valid-task
+                                                                 property value))))]
+
+      (is (= valid-task (validate-task valid-task))
+          "Should accept a valid task")
+      (is (invalid-after-modification? :task-id "alpha")
+          "Should reject tasks with alphabetical task IDs")
+      (is (valid-after-modification? :task-id (str (inc (Integer/MAX_VALUE))))
+          "Should accept task with ID greater than the max integer value")
+      (is (invalid-after-modification? :task-id "1%3B%20drop%20table%20task%3B")
+          "Should reject attempted SQL injection in the task ID")
+      (is (valid-after-modification? :task-id "9223372036854775806")
+          "Should accept task when using an ID less than the max value
+           for the bigint type in postgres")
+      (is (valid-after-modification? :task-id "9223372036854775807")
+          "Should accept task when using an ID equal to the max value for
+          the bigint type in postgres")
+      (is (invalid-after-modification? :task-id "9223372036854775808")
+          "Should reject task when using an ID greater than the max value
+           for the bigint type in postgres")
+      (is (invalid-after-modification? :task-id "-3")
+          "Should reject tasks with negative task IDs"))))
 
 (deftest main-test
   (testing "Has main function"
